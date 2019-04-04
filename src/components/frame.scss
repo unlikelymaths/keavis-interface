@@ -1,0 +1,49 @@
+@import '@material/react-drawer/index.scss';
+@import '@material/react-material-icon/index.scss';
+@import '@material/react-list/index.scss';
+@import '@material/react-top-app-bar/index.scss';
+
+.frame {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.frame-content {
+    display: flex;
+}
+
+.mdc-top-app-bar--fixed-adjust {
+    display: block;
+    position:absolute;
+    height:auto;
+    bottom:0;
+    top:0;
+    left:0;
+    right:0;
+}
+
+.mdc-drawer-app-content {
+    height: 100%;
+}
+
+.mdc-drawer--dismissible {
+    top: auto;
+}
+
+// to fix the scrolling on the drawer
+// since its height ignores the top-app-bar
+.drawer-buffer {
+    height: 60px; 
+}
+
+
+// Set z-index because of leaflet
+.mdc-top-app-bar {
+    z-index: 2200 !important;
+}
+.mdc-drawer {
+    z-index: 2100 !important;
+}
+.mdc-drawer-scrim {
+    z-index: 2000 !important;
+}

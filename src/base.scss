@@ -1,0 +1,24 @@
+// Body for web app look
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; //Hide the scrollbar
+}
+
+// Definitions for general flex layouts
+.flex-container {
+    display: flex;
+}
+
+.flex-container-vertical {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-item {
+    flex: 1;
+}
+
+.flex-item-big {
+    flex: 2;
+}

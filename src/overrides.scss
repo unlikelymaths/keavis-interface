@@ -1,0 +1,11 @@
+$mdc-theme-primary: #005555;
+$mdc-theme-secondary: #ffff00;
+$mdc-theme-background: #ffffff;
+@import '@material/react-button/index.scss';
+@import '@material/react-top-app-bar/index.scss';
+@import '@material/button/mixins';
+
+
+.button-alternate {
+  @include mdc-button-container-fill-color(rgb(200,200,30));
+}
