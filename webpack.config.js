@@ -1,7 +1,10 @@
 module.exports = {
   mode: 'development',
   devServer: {
-    contentBase: './dist'
+    contentBase: './dist',
+    useLocalIp: true,
+    host: '0.0.0.0',
+    port: 8080
   },
   entry: {
     main: './src/main.js'
