@@ -7,6 +7,8 @@ import L from 'leaflet';
 import 'leaflet.heat/dist/leaflet-heat.js';
 import 'leaflet/dist/leaflet.css';
 
+import './map.scss';
+
 class Map extends React.Component {
     constructor(props){
         super(props)
