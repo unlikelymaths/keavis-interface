@@ -15,17 +15,18 @@ class BarChart extends Component {
         this.topicframe = null
         this.frame_id = null
         this.topic_id = null
+        this.height = null
+        this.width = null
     }
     
     shouldComponentUpdate(nextProps, nextState) {
         if (this.topic_id != nextProps.topic_id || this.frame_id != nextProps.frame_id) {
-            console.log('get_topicframe')
             this.topic_id = nextProps.topic_id
-            topicBuffer.get_topicframe(this.topic_id, this.frame_id, this.recieve_topicframe.bind(this))
+            topicBuffer.get_topicframe(nextProps.topic_id, nextProps.frame_id, this.recieve_topicframe.bind(this))
         }
         if (this.frame_id != nextProps.frame_id) {
             this.frame_id = nextProps.frame_id
-            topicBuffer.get_framesummary(this.frame_id, this.recieve_framesummary.bind(this))
+            topicBuffer.get_framesummary(nextProps.frame_id, this.recieve_framesummary.bind(this))
         }
         return false;
     }
@@ -43,31 +44,42 @@ class BarChart extends Component {
     }
     
     recieve_topicframe(topicframe) {
-        console.log('recieve_topicframe')
         this.topicframe = topicframe
         this.createBarChart()
     }
     
     createBarChart() {
-        console.log('createBarChart ' + this.framesummary)
-        var bg_data = []
-        var fg_data = []
-        if (this.framesummary) {
-            bg_data = this.framesummary.counts
+        // Ensure that background data has arrived
+        if (this.framesummary === null) {
+            return
         }
-        if (this.topicframe) {
+        const bg_data = this.framesummary.counts
+        
+        // Height and width must be known for scaling
+        if (this.height === null || this.width === null) {
+            return
+        }
+        const height = this.height
+        const width = this.width
+        
+        // Must have a node for drawing
+        if (this.svgRef.current === null) {
+            return
+        }
+        const node = this.svgRef.current
+        
+        // Foreground data is optional
+        var fg_data = []
+        if (this.topicframe !== null) {
             fg_data = this.topicframe.counts
         }
         
-        
-        const node = this.svgRef.current
+        // Initialize scales
         const binWidth = this.width / bg_data.length
-        const height = this.height
         var dataMax = max(bg_data)
-        if (this.topicframe) {
+        if (fg_data.length > 0) {
             dataMax = max(fg_data) * 3
         }
-        
         const yScale = scaleLinear()
             .domain([0, dataMax])
             .range([0, height * 0.9])
@@ -75,6 +87,7 @@ class BarChart extends Component {
             .domain([0, bg_data.length])
             .range([0, this.width])
         
+        // Draw background bars
         select(node)
             .selectAll('rect.bg')
             .data(bg_data)
@@ -109,6 +122,7 @@ class BarChart extends Component {
             .attr('height', d => yScale(d))
             .attr('y', (d,i) => height - yScale(d))
             
+        // Draw foreground bars
         if (fg_data.length > 0) {  
             select(node)
                 .selectAll('rect.fg')
@@ -153,12 +167,13 @@ class BarChart extends Component {
     }
 
     render() {
-        return <div className={'flex-item'}><svg ref={this.svgRef}
-                    width={this.props.size[0]} 
-                    height={this.props.size[1]}>
+        return <div className={'flex-item'}>
+            <svg ref={this.svgRef}
+              width={this.props.size[0]} 
+              height={this.props.size[1]}>
             </svg>
             <ReactResizeDetector handleWidth handleHeight onResize={this.onResize.bind(this)} />
-            </div>
+          </div>
     }
     
     onResize(width, height) {
