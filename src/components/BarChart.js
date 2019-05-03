@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { scaleLinear } from 'd3-scale'
-import { max } from 'd3-array'
+import { max, min } from 'd3-array'
 import { select } from 'd3-selection'
 import { transition } from "d3-transition"
 import { axisBottom } from "d3-axis"
@@ -18,6 +18,7 @@ class BarChart extends Component {
         this.topic_id = null
         this.height = null
         this.width = null
+        this.drawGroup = null
     }
     
     shouldComponentUpdate(nextProps, nextState) {
@@ -40,6 +41,7 @@ class BarChart extends Component {
     }
     
     recieve_framesummary(framesummary) {
+        console.log(framesummary)
         this.framesummary = framesummary
         this.createBarChart()
     }
@@ -49,7 +51,7 @@ class BarChart extends Component {
         this.createBarChart()
     }
     
-    createBarChart() {
+    createBarChart(is_resize = false) {
         // Ensure that background data has arrived
         if (this.framesummary === null) {
             return
@@ -68,12 +70,16 @@ class BarChart extends Component {
             return
         }
         var node = select(this.svgRef.current)
-        
+
         // Foreground data is optional
         var fg_data = []
         if (this.topicframe !== null) {
             fg_data = this.topicframe.counts
         }
+        
+        // Higher speed on resize
+        const duration = (is_resize === true ? 250 : 500)
+        console.log(duration)
         
         // Initialize scales
         const side_margins = 40
@@ -82,7 +88,7 @@ class BarChart extends Component {
         const binWidth = (this.width - 2 * side_margins) / bg_data.length
         var dataMax = max(bg_data)
         if (fg_data.length > 0) {
-            dataMax = max(fg_data) * 3
+            dataMax = min([dataMax, max(fg_data) * 3])
         }
         const yScale = scaleLinear()
             .domain([0, dataMax])
@@ -91,73 +97,7 @@ class BarChart extends Component {
             .domain([0, bg_data.length])
             .range([side_margins, this.width - side_margins])
         
-        // Draw background bars
-        node.selectAll('rect.bg')
-            .data(bg_data)
-            .enter()
-            .append('rect')
-            .attr('class', 'bg')
-            .attr('height', d => 0)
-            .attr('y', (d,i) => height - lower_margin)
-        
-        node.selectAll('rect.bg')
-            .data(bg_data)
-            .exit()
-            .remove()
-            
-        node.selectAll('rect.bg')
-            .data(bg_data)
-            .style('fill', '#fe9922')
-            .attr('x', (d,i) => xScale(i))
-            .attr('width', binWidth)
-            
-        node.selectAll('rect.bg')
-            .interrupt()
-            
-        node.selectAll('rect.bg')
-            .transition()
-            .delay(0)
-            .duration(500)
-            .attr('height', d => yScale(d))
-            .attr('y', (d,i) => height - lower_margin - yScale(d))
-            
-        // Draw foreground bars
-        if (fg_data.length > 0) {  
-            node.selectAll('rect.fg')
-                .data(fg_data)
-                .enter()
-                .append('rect')
-                .attr('class', 'fg')
-                .attr('height', d => 0)
-                .attr('y', (d,i) => height - 0)
-            
-            node.selectAll('rect.fg')
-                .data(fg_data)
-                .exit()
-                .remove()
-                
-            node.selectAll('rect.fg')
-                .data(fg_data)
-                .style('fill', '#0000ff')
-                .attr('x', (d,i) => xScale(i))
-                .attr('width', binWidth)
-                
-            node.selectAll('rect.fg')
-                .interrupt()
-                
-            node.selectAll('rect.fg')
-                .transition()
-                .delay(0)
-                .duration(500)
-                .attr('height', d => yScale(d))
-                .attr('y', (d,i) => height - yScale(d))
-        } else {
-             node.selectAll('rect.fg')
-                .data(fg_data)
-                .exit()
-                .remove()
-        }
-        
+        // Draw axis
         node.selectAll('#bar_chart_x_axis')
             .remove();
         var tickValues = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
@@ -178,6 +118,88 @@ class BarChart extends Component {
             .attr('id', 'bar_chart_x_axis')   
             .attr('transform', 'translate(0,' + (height - 40) + ')')    
             .call(x_axis);
+        
+        // Initialize draw group if necessary
+        if (this.drawGroup === null) {
+            this.drawGroup = node.append("g")
+                .attr('id', 'bar_chart_draw_area')
+                .attr("transform", "scale(1,-1)")
+        }
+        
+        // All following commands go into the draw group
+        node = this.drawGroup
+        
+        // Draw background bars
+        node.selectAll('rect.bg')
+            .data(bg_data)
+            .enter()
+            .append('rect')
+            .attr('class', 'bg')
+            .attr('height', 0)
+            .attr('y', -height+lower_margin)
+        
+        node.selectAll('rect.bg')
+            .data(bg_data)
+            .exit()
+            .remove()
+            
+        node.selectAll('rect.bg')
+            .data(bg_data)
+            .style('fill', '#fe9922')
+            .attr('x', (d,i) => xScale(i))
+            .attr('width', binWidth)
+            .attr('y', -height+lower_margin)
+            
+        node.selectAll('rect.bg')
+            .interrupt()
+            
+        
+        node.selectAll('rect.bg')
+            .transition()
+            .delay(0)
+            .duration(duration)
+            .attr('height', d => yScale(d))
+            
+        // Draw foreground bars
+        if (fg_data.length > 0) {  
+            node.selectAll('rect.fg')
+                .data(fg_data)
+                .enter()
+                .append('rect')
+                .attr('class', 'fg')
+                .attr('height', 0)
+                .attr('y', -height+lower_margin)
+            
+            node.selectAll('rect.fg')
+                .data(fg_data)
+                .exit()
+                .remove()
+                
+            node.selectAll('rect.fg')
+                .data(fg_data)
+                .style('fill', '#0000ff')
+                .attr('x', (d,i) => xScale(i))
+                .attr('width', binWidth)
+                .attr('y', -height+lower_margin)
+                
+            node.selectAll('rect.fg')
+                .interrupt()
+                
+            node.selectAll('rect.fg')
+                .transition()
+                .delay(0)
+                .duration(duration)
+                .attr('height', d => yScale(d))
+        } else {
+            node.selectAll('rect.fg')
+                .data(fg_data)
+                .exit()
+                .transition()
+                .delay(0)
+                .duration(duration)
+                .attr('height', 0)
+                .remove()
+        }
     }
 
     render() {
@@ -191,9 +213,10 @@ class BarChart extends Component {
     }
     
     onResize(width, height) {
+        const is_resize = (this.width !== null)
         this.width = width;
         this.height = height;
-        this.createBarChart()
+        this.createBarChart(is_resize)
     }
 }
 export default BarChart
