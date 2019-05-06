@@ -3,7 +3,7 @@ import { scaleLinear } from 'd3-scale'
 import { max, min } from 'd3-array'
 import { select } from 'd3-selection'
 import { transition } from "d3-transition"
-import { axisBottom } from "d3-axis"
+import { axisBottom, axisLeft } from "d3-axis"
 import ReactResizeDetector from 'react-resize-detector';
 
 import topicBuffer from '../TopicBuffer'
@@ -91,6 +91,9 @@ class BarChart extends Component {
         const yScale = scaleLinear()
             .domain([0, dataMax])
             .range([0, height - lower_margin - upper_margin])
+        const yScaleInv = scaleLinear()
+            .domain([dataMax, 0])
+            .range([0, height - lower_margin - upper_margin])
         const xScale = scaleLinear()
             .domain([0, bg_data.length])
             .range([side_margins, this.width - side_margins])
@@ -116,6 +119,15 @@ class BarChart extends Component {
             .attr('id', 'bar_chart_x_axis')   
             .attr('transform', 'translate(0,' + (height - 40) + ')')    
             .call(x_axis);
+        
+        node.selectAll('#bar_chart_y_axis')
+            .remove();
+        var y_axis = axisLeft()
+            .scale(yScaleInv);
+        node.append('g')
+            .attr('id', 'bar_chart_y_axis')   
+            .attr('transform', 'translate(' + side_margins + ',' + upper_margin + ')')    
+            .call(y_axis);
         
         // Initialize draw group if necessary
         if (this.drawGroup === null) {
