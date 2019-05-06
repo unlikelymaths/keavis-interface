@@ -69,7 +69,6 @@ class TopicCard extends Component {
     }
     
     handleData(data) {
-        //console.log('TopicCard:handleData')
         // add size information
         var tokens = data.tokens.map(d => ({token: d[0], weight: d[1], size: textSize(d[0])}));
         
@@ -109,7 +108,6 @@ class TopicCard extends Component {
                     token: d.token}
             })
             
-        //console.log(this.nodes)
         var simulation = forceSimulation(this.nodes)
             .force('centerX', forceX(this.props.size[0] / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
             .force('centerY', forceY(this.props.size[1] / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
@@ -119,9 +117,8 @@ class TopicCard extends Component {
             .velocityDecay(0.5)
             .alphaDecay(0.01)
             .on('tick', this.ticked.bind(this))
-            .on('end', function() { /*console.log('ended!');*/ });
+            .on('end', function() { });
             
-        //console.log("Initialized")
     }
     
     
@@ -189,15 +186,12 @@ class TopicCard extends Component {
 
     
     clicked() {
-        console.log(this.props.topic_id)
         if (this.props.onClick) {
             this.props.onClick(this.props.topic_id)
         }
     }
     
     render() {
-        //console.log('Render INit:' + this.state.initialized)
-        
         var content = null
         if (this.state.initialized) {
             content = (
@@ -220,7 +214,6 @@ class TopicCard extends Component {
                 </div>)
         }
         var style = {}
-        console.log('TopicCard render ' + this.props.highlight)
         if (this.props.highlight == true) {
             style={backgroundColor: 'lightblue'}
         }
@@ -248,7 +241,6 @@ export default TopicCard
 //        .domain([0, dataMax])
 //        .range([0, this.props.size[1]])
 //    const width = this.props.size[0] / this.props.data.length
-//    console.log("SVG: " + this.props.size[0] + ", Bar: " + width)
 //    select(node)
 //        .selectAll('rect')
 //        .data(this.props.data)

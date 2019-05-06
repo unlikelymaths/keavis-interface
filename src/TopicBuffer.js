@@ -28,7 +28,6 @@ function make_key(obj1, obj2) {
 class TopicBuffer {
 
     constructor() {
-        console.log('New Buffer')
         this.latest_frame_id = null;
         this.topics = new LimitBuffer(100);
         this.framesummaries = new LimitBuffer(100);
@@ -45,7 +44,6 @@ class TopicBuffer {
                 callback(framesummary)
             }
             const request = api_base + 'framesummary/20190202'
-            console.log(request)
             $.getJSON(request, handle_data.bind(this));
         }
     }
@@ -65,7 +63,6 @@ class TopicBuffer {
                 callback(framesummary)
             }
             const request = api_base + 'framesummary/' + frame_id
-            console.log(request)
             $.getJSON(request, handle_data.bind(this));
         }
     }

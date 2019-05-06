@@ -23,7 +23,6 @@ class PopularTopicsPage extends React.Component {
     }
     
     keypress(e) {
-        console.log(e.keyCode)
         switch(e.keyCode) {
         case 37: // Arrow Left
             this.previous_frame()
@@ -37,13 +36,11 @@ class PopularTopicsPage extends React.Component {
     
     previous_frame() {
         var frame_id = this.state.current_framesummary.frame_id - 1;
-        console.log(frame_id)
         topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
     
     next_frame() {
         var frame_id = this.state.current_framesummary.frame_id + 1;
-        console.log(frame_id)
         topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
 
@@ -105,7 +102,6 @@ class PopularTopicsPage extends React.Component {
     }
   
     render() {
-        console.log(this.state.current_topic_id)
         var mapHeight = '64%';
         var chartHeight = '36%';
         var frame_name = '';
@@ -126,9 +122,7 @@ class PopularTopicsPage extends React.Component {
             }else{
                 var current_topic_id = this.state.current_topic_id
                 function compare_topic_id(s) {
-                    var same = (s === current_topic_id)
-                    console.log(same)
-                    return same
+                    return (s === current_topic_id)
                 }
                 topic_card_list = this.state.current_framesummary.hot.slice(this.state.current_idx, this.state.current_idx + 4).map(
                     (topic_id) => <TopicCard key={topic_id} 

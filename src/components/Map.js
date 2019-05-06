@@ -88,14 +88,12 @@ class HeatLayerList {
     setTimer() {
         this.clearTimer();
         this.timer = setInterval(this.tick.bind(this),this.timerDuration);
-        console.log('set')
     }
     
     clearTimer() {
         if (this.timer !== null) {
             clearInterval(this.timer);
             this.timer = null;
-            console.log('clear')
         }
     }
     

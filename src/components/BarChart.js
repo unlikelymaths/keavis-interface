@@ -41,7 +41,6 @@ class BarChart extends Component {
     }
     
     recieve_framesummary(framesummary) {
-        console.log(framesummary)
         this.framesummary = framesummary
         this.createBarChart()
     }
@@ -79,7 +78,6 @@ class BarChart extends Component {
         
         // Higher speed on resize
         const duration = (is_resize === true ? 250 : 500)
-        console.log(duration)
         
         // Initialize scales
         const side_margins = 40

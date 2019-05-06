@@ -10,7 +10,6 @@ class Chart extends Component {
     }
 
     render() {
-        console.log('render' + this.props.frame_id)
         var previous_button = null
         if (this.props.previous) {
             previous_button =  <div className={'topleft'}>
