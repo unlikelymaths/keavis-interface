@@ -145,7 +145,10 @@ class PopularTopicsPage extends React.Component {
         
         return <FrameContent>
             <div className='flex-item flex-container-vertical'>
-            {<Map className='flex-item-big' frameID={this.state.frame_id} heatmap={heatmap}/>}
+            {<Map className='flex-item-big' 
+               frameID={this.state.frame_id} 
+               heatmap={heatmap}
+               blendingTime={500}/>}
                 <Chart className='flex-item' 
                        frame_id={this.state.frame_id}
                        topic_id={this.state.current_topic_id}

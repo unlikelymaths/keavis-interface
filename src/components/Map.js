@@ -1,6 +1,5 @@
-import $ from "jquery";
+import $ from 'jquery';
 import React from 'react';
-
 import ReactResizeDetector from 'react-resize-detector';
 
 import L from 'leaflet';
@@ -9,12 +8,121 @@ import 'leaflet/dist/leaflet.css';
 
 import './map.scss';
 
+
+class HeatLayer {
+    static heat_id_counter = 0;
+    static settings = {
+        radius: 15, 
+        blur: 15, 
+        minOpacity: 0.35
+        };
+    
+    constructor(map, latLngs) {
+        this.map = map;
+        this.id = HeatLayer.heat_id_counter++;
+        this.addLayer(latLngs);
+        this.setOpacity(0);
+    }
+    
+    clear() {
+        this.map.removeLayer(this.heatLayer)
+    }
+    
+    addLayer(latLngs) {
+        this.heatLayer = L.heatLayer(latLngs, HeatLayer.settings).addTo(this.map);
+        var theCanvases = document.getElementsByTagName("canvas");
+        for (var i=0; i < theCanvases.length; i++) { 
+            var myCanvas = theCanvases[i];
+            var attr = $(myCanvas).attr('id');
+            if( typeof(attr) === 'undefined') {
+                $(myCanvas).attr('id', this.id);
+                break;
+            }
+        }
+        this.docElement = document.getElementById(this.id);
+    }
+    
+    setOpacity(opacity) {
+        if (opacity > 1) {
+            opacity = 1;
+        } else if (opacity < 0) {
+            opacity = 0;
+        }
+        this.opacity = opacity;
+        this.docElement.style.opacity = opacity;
+    }
+    
+    changeOpacity(blendingFactor) {
+        this.setOpacity(this.opacity + blendingFactor);
+    }
+}
+
+
+class HeatLayerList {
+    
+    constructor(map, blendingTime) {
+        this.map = map;
+        this.timerDuration = 1000/25
+        this.blendingFactor = 1 / (blendingTime / this.timerDuration);
+        this.timer = null;
+        this.list = [];
+    }
+    
+    clear() {
+        this.clearTimer();
+        for (var i = this.list.length-1; i >= 0; --i) {
+            this.removeLayer(i);
+        }
+    }
+    
+    addLayer(latLngs) {
+        this.list.push(new HeatLayer(this.map, latLngs));
+        this.setTimer();
+    }
+    
+    removeLayer(idx) {
+        this.list[idx].clear();
+        this.list.splice(idx, 1);
+    }
+    
+    setTimer() {
+        this.clearTimer();
+        this.timer = setInterval(this.tick.bind(this),this.timerDuration);
+        console.log('set')
+    }
+    
+    clearTimer() {
+        if (this.timer !== null) {
+            clearInterval(this.timer);
+            this.timer = null;
+            console.log('clear')
+        }
+    }
+    
+    tick() {
+        for (var i = 0; i < this.list.length - 1; ++i) {
+            this.list[i].changeOpacity(-this.blendingFactor);
+            if (this.list[i].opacity == 0) {
+                this.removeLayer(i--);
+            }
+                
+        }
+        if (this.list.length >= 1) {
+            this.list[this.list.length-1].changeOpacity(this.blendingFactor);
+        }
+        
+        if (this.list.length == 1 && this.list[0].opacity == 1) {
+            this.clearTimer()
+        }
+    }
+}
+
+
 class Map extends React.Component {
     constructor(props){
-        super(props)
-        this.heat = null
-        this.blendingTimer = null
-        this.currentFrameID = null
+        super(props);
+        this.currentFrameID = null;
+        this.heatLayers = null;
         
         // After resizing the dom element the size of leaflet-heat
         // needs to be invalidated. The ReactResizeDetector
@@ -25,102 +133,79 @@ class Map extends React.Component {
         // (requestInvalidation).
         // A timer (invalidateTimeout) is started or restarted each call
         // to reset the value of wasInvalidatedRecently.
-        this.invalidateTimeout = null
-        this.wasInvalidatedRecently = false
-        this.requestInvalidation = false
+        this.invalidateTimeout = null;
+        this.wasInvalidatedRecently = false;
+        this.requestInvalidation = false;
     }
     
     shouldComponentUpdate(nextProps, nextState) {
         if (nextProps.frameID != this.currentFrameID) {
-            this.currentFrameID = nextProps.frameID
-            var swapedData = nextProps.heatmap.map(d => [d[1],d[0]])
-            if (this.heat != null) {
-                this.heat.setLatLngs(swapedData)
+            this.currentFrameID = nextProps.frameID;
+            var latLngs = nextProps.heatmap.map(d => [d[1],d[0]]);
+            if (this.heatLayers != null) {
+                this.heatLayers.addLayer(latLngs);
             }
-            this.opacity = 0
-            this.blendingTimer = setInterval(this.tick.bind(this),1000/25);
         }
         return false;
     }
-    
-    add_heat_layer(heat_id, opacity) {
-        var heat_layer = L.heatLayer([[0,0]], {radius: 15, blur: 15, minOpacity: 0.35}).addTo(this.map);
-        var theCanvases = document.getElementsByTagName("canvas");
-        /* setting canvas Ids */
-        for (var i=0; i < theCanvases.length; i++) { 
-            var myCanvas = theCanvases[i];
-            var attr = $(myCanvas).attr('id');
-            if( typeof(attr) === 'undefined') {
-                $(myCanvas).attr('id', heat_id);
-                break;
-            }
-        }
-        document.getElementById(heat_id).style.opacity = opacity; 
-        return heat_layer
-    }
-    
+        
     componentDidMount() {
         this.map = L.map('map', {
             center: [34.069594, -118.442999],
             zoom: 10,
             layers: [
                 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                    attribution: '&copy; <a href="http://osm.org/copyright">' +
+                                 'OpenStreetMap</a> contributors'
                     }),
                 ]
             });
-        this.heat = this.add_heat_layer('heatmap_0', 0)
-        this.opacity = 0
+        this.heatLayers = new HeatLayerList(this.map, this.props.blendingTime);
+    }
+     
+    componentWillUnmount() {
+        this.heatLayers.clear();
     }
   
-    
-    tick() {
-        var speed = 0.05
-        this.opacity = this.opacity + speed;
-        if (this.opacity >= 1) {
-            clearInterval(this.blendingTimer);
-            this.opacity = 1
-        }
-        document.getElementById('heatmap_0').style.opacity=this.opacity; 
-    }
-    
     render() {
         return <div className={this.props.className}>
-                <ReactResizeDetector handleWidth handleHeight onResize={this.onResize.bind(this)} />
-                <div id="map"></div>
-            </div>
+              <ReactResizeDetector 
+                handleWidth 
+                handleHeight 
+                onResize={this.onResize.bind(this)} />
+              <div id="map"></div>
+            </div>;
     }
     
     allowNewInvalidation() {
         if (this.requestInvalidation) {
-            this.invalidateSize()
+            this.invalidateSize();
         }
-        this.requestInvalidation = false
-        this.wasInvalidatedRecently = false
-        this.invalidateTimeout = null
+        this.requestInvalidation = false;
+        this.wasInvalidatedRecently = false;
+        this.invalidateTimeout = null;
     }
     
     invalidateSize() {
         if (this.map != null) {
-            this.map.invalidateSize()
+            this.map.invalidateSize();
         }
     }
     
     onResize(width, height) {
         if (this.wasInvalidatedRecently) {
-            this.requestInvalidation = true
+            this.requestInvalidation = true;
         } else {
             this.invalidateSize()
-            this.wasInvalidatedRecently = true
-            this.requestInvalidation = false
+            this.wasInvalidatedRecently = true;
+            this.requestInvalidation = false;
         }
         if (this.invalidateTimeout != null) {
             clearTimeout(this.invalidateTimeout);
         }   
         this.invalidateTimeout = setTimeout(
             this.allowNewInvalidation.bind(this),
-            100)
-        
+            100);
     }
 }
 
