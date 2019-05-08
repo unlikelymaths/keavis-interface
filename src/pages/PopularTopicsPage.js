@@ -124,7 +124,7 @@ class PopularTopicsPage extends React.Component {
                 function compare_topic_id(s) {
                     return (s === current_topic_id)
                 }
-                topic_card_list = this.state.current_framesummary.hot.slice(this.state.current_idx, this.state.current_idx + 4).map(
+                topic_card_list = this.state.current_framesummary.hot.map(
                     (topic_id) => <TopicCard key={topic_id} 
                                           onClick={this.switch_topic.bind(this)}
                                           highlight={compare_topic_id(topic_id)}
@@ -150,20 +150,7 @@ class PopularTopicsPage extends React.Component {
                        next={this.next_frame.bind(this)}/>
             </div>
             <div className='right-sheet'>
-                <Button
-                    raised
-                    className='button-alternate'
-                    onClick={this.previous_topics.bind(this)}>
-                        Previous
-                </Button>
-                {/*Topics {this.state.current_idx} to {this.state.current_idx + 4} ({num_topics})*/}
                 {topic_card_list}
-                <Button
-                    raised
-                    className='button-alternate'
-                    onClick={this.next_topics.bind(this)}>
-                        Next
-                </Button>
             </div>
         </FrameContent>
     }

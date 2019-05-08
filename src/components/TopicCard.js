@@ -45,30 +45,65 @@ class TopicCard extends Component {
         super(props)
         this.count = 0
         this.state = {initialized: true};
+        this.ref = React.createRef();
+        this.simulation = null;
     }
     
     shouldComponentUpdate(nextProps, nextState) {
+        if (this.props.topic_id != nextProps.topic_id ||
+            this.props.frame_id != nextProps.frame_id)
+        {
+            topicBuffer.get_topicframe(this.props.topic_id, this.props.frame_id, this.handleData.bind(this))
+        }
         return false;
     }
 
     componentDidMount() {
         topicBuffer.get_topicframe(this.props.topic_id, this.props.frame_id, this.handleData.bind(this))
+        var elem1 = document.getElementsByClassName('right-sheet')[0];
+        elem1.addEventListener('scroll', this.handleScroll.bind(this), false);
     }
 
-    componentDidUpdate() {
-        //this.createBarChart()
+    componentWillUnmount() {
+        var elem1 = document.getElementsByClassName('right-sheet')[0];
+        elem1.removeEventListener('scroll', this.handleScroll.bind(this));
+        console.log('ByeBye')
+        if (this.simulation !== null) 
+        {
+            this.simulation.stop()
+        }
     }
-    
-    update_sizes() {
-        for (let i=0; i < this.nodes.length; i++) {
-            let node = this.nodes[i]
-            node.weight = node.weight * 0.95 + node.weightTarget * 0.05
-            node.rx = node.weight * node.size.width
-            node.ry = node.weight * node.size.height
+        
+    handleScroll() {
+        if (this.simulation !== null) {
+            var isVisible = this.isVisible()
+            if (isVisible) {
+                this.simulation.restart()
+            } else {
+                this.simulation.stop()
+            }
         }
     }
     
+    isVisible() {
+        if (this.ref.current !== null)
+        {
+            var bounding = this.ref.current.getBoundingClientRect();
+            return (bounding.bottom >= 0 &&
+                    bounding.right >= 0 &&
+                    bounding.left <= (window.innerWidth || document.documentElement.clientWidth) &&
+                    bounding.top <= (window.innerHeight || document.documentElement.clientHeight));
+        }
+        return null;
+    }
+        
     handleData(data) {
+        // Stop simluation if it is still running
+        if (this.simulation !== null) 
+        {
+            this.simulation.stop()
+        }
+        
         // add size information
         var tokens = data.tokens.map(d => ({token: d[0], weight: d[1], size: textSize(d[0])}));
         
@@ -107,23 +142,29 @@ class TopicCard extends Component {
                     weightTarget: d.weight, 
                     token: d.token}
             })
-            
-        var simulation = forceSimulation(this.nodes)
+        
+        
+        this.simulation = forceSimulation(this.nodes)
             .force('centerX', forceX(this.props.size[0] / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
             .force('centerY', forceY(this.props.size[1] / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
             .force('collide', ellipseCollide())
-            //.force('radial', forceRadial(50, this.props.size[0] / 2, this.props.size[1] / 2))
-            //.force('center', forceCenter(center[0],center[1]))
             .velocityDecay(0.5)
             .alphaDecay(0.01)
-            .on('tick', this.ticked.bind(this))
-            .on('end', function() { });
-            
+            .on('tick', this.update_nodes.bind(this))
+            .on('end', function() { })
+            .stop();
+        
+        setTimeout(this.checkVisibility.bind(this), 0);        
     }
     
+    checkVisibility() {
+        var isVisible = this.isVisible();
+        if (isVisible === true) {
+            this.simulation.restart()
+        }
+    }
     
-    
-    ticked() {
+    update_nodes() {
         const show_collision = false
         this.count = this.count + 1
         const node = this.node
@@ -135,6 +176,11 @@ class TopicCard extends Component {
         var selection = select(node)
             .selectAll('text')
             .data(this.nodes)
+            .text(function(d){return d.token})
+            .attr('dominant-baseline', 'central')
+            .style('font-family', 'Arial,Helvetica')
+            .style('font-weight', 'bold')
+            .style("text-anchor", "middle")
         
         selection.exit()
             .remove()
@@ -173,15 +219,15 @@ class TopicCard extends Component {
         //}
         selection.attr("x", function(d) { return d.x; })
             .attr("y", function(d) { return d.y; })
-            .text(function(d){return d.token})
-            .attr("dominant-baseline", "central")
             .style("font-size", function(d){return (d.weight * 10).toFixed(1) + "px";})
-            .style('font-family', 'Arial,Helvetica')
-            .style('font-weight', 'bold')
-            .style("text-anchor", "middle")
             .style('fill', d => color(d.weight))
             
-        this.update_sizes()
+        for (let i=0; i < this.nodes.length; i++) {
+            let node = this.nodes[i]
+            node.weight = node.weight * 0.95 + node.weightTarget * 0.05
+            node.rx = node.weight * node.size.width
+            node.ry = node.weight * node.size.height
+        }
     }
 
     
@@ -219,7 +265,7 @@ class TopicCard extends Component {
         }
         
         
-        return (<div style={{margin: "10px"}}>
+        return (<div style={{margin: "10px"}} ref={this.ref}>
             <Card>
                 <CardPrimaryContent style={style}
                                     onClick={this.clicked.bind(this)}>
