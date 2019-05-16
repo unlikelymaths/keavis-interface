@@ -5,12 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server --open",
-    "dev-index": "webpack --mode development ./src/index.js --output ./dist/index.js",
-    "index": "webpack --mode production  ./src/index.js --output ./dist/index.js",
-    "dev-map": "webpack --mode development ./src/map.js --output ./dist/map.js",
-    "map": "webpack --mode production  ./src/map.js --output ./dist/map.js",
-    "dev": "webpack",
-    "build": "npm run index && npm run map"
+    "dev":   "webpack --mode development ./src/main.js --output ./dist/map.js",
+    "build": "webpack --mode production  ./src/main.js --output ./dist/map.js"
   },
   "keywords": [],
   "author": "",
