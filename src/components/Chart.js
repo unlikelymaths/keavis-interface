@@ -26,7 +26,10 @@ class Chart extends Component {
                           </Button>
                         </div>
         }
-        return  <div className={'flex-container ' + this.props.className} style={{position: 'relative'}}>
+        var style = {position: 'relative'}
+        if (typeof(this.props['style']) !== 'undefined') {
+            style = Object.assign(this.props.style, style)
+        return  <div className={'flex-container ' + this.props.className} style={style}>
                   {previous_button}
                   <BarChart frame_id={this.props.frame_id} topic_id={this.props.topic_id} size={['100%','100%']} />
                   {next_button}

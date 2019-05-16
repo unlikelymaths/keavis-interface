@@ -166,7 +166,7 @@ class Map extends React.Component {
     }
   
     render() {
-        return <div className={this.props.className}>
+        return <div style={this.props.style} className={this.props.className}>
               <ReactResizeDetector 
                 handleWidth 
                 handleHeight 
