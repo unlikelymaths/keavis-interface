@@ -91,12 +91,15 @@ class Frame extends React.Component {
               dismissible={!this.state.drawerModal}
               open={this.state.drawerOpen}>
                   {<DrawerHeader>
-                <DrawerTitle tag='h3'>
+                <DrawerTitle>
                     KeaVis
                 </DrawerTitle>
+                <DrawerSubtitle>
+                    Los Angeles
+                </DrawerSubtitle>
                   </DrawerHeader>}
     
-                <DrawerContent style={{margin: '10px'}}>
+                <DrawerContent style={{marginLeft: '16px', marginRight: '16px', marginTop: '0px'}}>
                 <List singleSelection 
                     selectedIndex={0}
                     handleSelect={this.props.handleSelect}>
