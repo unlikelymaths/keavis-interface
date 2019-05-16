@@ -2,6 +2,8 @@ import $ from "jquery";
 import React from "react";
 
 import Button from '@material/react-button';
+import Tab from '@material/react-tab';
+import TabBar from '@material/react-tab-bar';
 
 import topicBuffer from '../TopicBuffer'
 import {FrameContent} from "../components/Frame";
@@ -10,17 +12,38 @@ import Chart from "../components/Chart";
 import TopicCard from "../components/TopicCard";
 
 
+import '@material/react-tab-bar/index.scss';
+import '@material/react-tab-scroller/index.scss';
+import '@material/react-tab/index.scss';
+import '@material/react-tab-indicator/index.scss';
 
 class PopularTopicsPage extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {number: 0, current_framesummary: {}, current_topic_id: null, current_idx: 0};
+        this.mobileThreshold = 700;
+        this.state = {
+            number: 0, 
+            current_framesummary: {}, 
+            current_topic_id: null, 
+            current_idx: 0,
+            mobile: (window.innerWidth <= this.mobileThreshold),
+            tabIndex: 0
+            };
     }
     
     componentDidMount() {
         topicBuffer.get_latest_framesummary(this.recieve_framesummary.bind(this))
         $(document).keypress(this.keypress.bind(this));
+        window.addEventListener('resize', this.onWindowSize.bind(this));
     }
+    
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.onWindowSize.bind(this));
+    }
+    
+    onWindowSize() {
+        this.setState({ mobile: (window.innerWidth <= this.mobileThreshold) });
+    };
     
     keypress(e) {
         switch(e.keyCode) {
@@ -100,10 +123,12 @@ class PopularTopicsPage extends React.Component {
                 });
         }
     }
-  
+    
+    handleActiveIndexUpdate(tabIndex) {
+        this.setState({ tabIndex: tabIndex });
+    }
+    
     render() {
-        var mapHeight = '64%';
-        var chartHeight = '36%';
         var frame_name = '';
         var heatmap = null
         var topic_card_list = 'Loading Topics.'
@@ -137,22 +162,61 @@ class PopularTopicsPage extends React.Component {
         }
         
         
-        return <FrameContent>
-            <div className='flex-item flex-container-vertical'>
-            {<Map className='flex-item-big' 
-               frameID={this.state.frame_id} 
-               heatmap={heatmap}
-               blendingTime={500}/>}
-                <Chart className='flex-item' 
-                       frame_id={this.state.frame_id}
-                       topic_id={this.state.current_topic_id}
-                       previous={this.previous_frame.bind(this)}
-                       next={this.next_frame.bind(this)}/>
-            </div>
-            <div className='right-sheet'>
-                {topic_card_list}
-            </div>
-        </FrameContent>
+        if (this.state.mobile) {
+            var topArea = null;
+            if (this.state.tabIndex == 0) {
+                topArea = <Map className='flex-item-big' 
+                    frameID={this.state.frame_id} 
+                    heatmap={heatmap}
+                    blendingTime={500}/>
+            } else {
+                topArea = <Chart className='flex-item-big' 
+                    frame_id={this.state.frame_id}
+                    topic_id={this.state.current_topic_id}
+                    previous={this.previous_frame.bind(this)}
+                    next={this.next_frame.bind(this)}/>
+            }
+                
+            return <FrameContent vertical={true}>
+                <TabBar
+                    activeIndex={this.state.tabIndex}
+                    handleActiveIndexUpdate={this.handleActiveIndexUpdate.bind(this)}>
+                    <Tab>
+                        <span className='mdc-tab__text-label'>
+                            One
+                        </span>
+                    </Tab>
+                    <Tab>
+                        <span className='mdc-tab__text-label'>
+                            Two
+                        </span>
+                    </Tab>
+                </TabBar>
+                <div className='flex-item flex-container-vertical'>
+                    {topArea}
+                    <div className='flex-item-big'>
+                        {/*topic_card_list*/}
+                    </div>
+                </div>
+            </FrameContent>
+        } else {
+            return <FrameContent>
+                <div className='flex-item flex-container-vertical'>
+                {<Map className='flex-item-big' 
+                frameID={this.state.frame_id} 
+                heatmap={heatmap}
+                blendingTime={500}/>}
+                    <Chart className='flex-item' 
+                        frame_id={this.state.frame_id}
+                        topic_id={this.state.current_topic_id}
+                        previous={this.previous_frame.bind(this)}
+                        next={this.next_frame.bind(this)}/>
+                </div>
+                <div className='right-sheet'>
+                    {topic_card_list}
+                </div>
+            </FrameContent>
+        }
     }
 }
 

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server --open",
-    "dev":   "webpack --mode development ./src/main.js --output ./dist/map.js",
+    "dev": "webpack --mode development ./src/main.js --output ./dist/map.js",
     "build": "webpack --mode production  ./src/main.js --output ./dist/map.js"
   },
   "keywords": [],
@@ -24,6 +24,8 @@
     "@material/react-layout-grid": "^0.7.0",
     "@material/react-list": "^0.6.2",
     "@material/react-material-icon": "^0.6.2",
+    "@material/react-tab": "^0.12.0",
+    "@material/react-tab-bar": "^0.12.0",
     "@material/react-top-app-bar": "^0.6.2",
     "babel-loader": "^8.0.4",
     "babel-plugin-transform-class-properties": "^6.24.1",

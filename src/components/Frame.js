@@ -9,7 +9,13 @@ import './frame.scss';
 //var FrameContent = DrawerAppContent;
 
 function FrameContent(props) {
-    return <DrawerAppContent className='frame-content'>
+    var className = null;
+    if (props.vertical) {
+        className = 'frame-content-vertical';
+    } else {
+        className = 'frame-content';
+    }
+    return <DrawerAppContent className={className}>
         {props.children}
     </DrawerAppContent>
 }

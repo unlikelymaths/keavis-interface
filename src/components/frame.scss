@@ -12,6 +12,11 @@
     display: flex;
 }
 
+.frame-content-vertical {
+    display: flex;
+    flex-direction: column;
+}
+
 .mdc-top-app-bar--fixed-adjust {
     display: block;
     position:absolute;
