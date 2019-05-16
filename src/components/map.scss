@@ -1,6 +1,10 @@
 
-
 #map {
     min-width: 50px;
     min-height: 50px;
+}
+
+.leaflet-container {
+    height: 100%;
+    width: 100%;
 }

@@ -16,6 +16,7 @@ import '@material/react-tab-bar/index.scss';
 import '@material/react-tab-scroller/index.scss';
 import '@material/react-tab/index.scss';
 import '@material/react-tab-indicator/index.scss';
+import './PopularTopicsPage.scss';
 
 class PopularTopicsPage extends React.Component {
     constructor(props) {
