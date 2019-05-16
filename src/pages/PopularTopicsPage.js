@@ -9,7 +9,7 @@ import topicBuffer from '../TopicBuffer'
 import {FrameContent} from "../components/Frame";
 import Map from "../components/Map";
 import Chart from "../components/Chart";
-import TopicCard from "../components/TopicCard";
+import TopicList from "../components/TopicList";
 
 
 import '@material/react-tab-bar/index.scss';
@@ -68,11 +68,7 @@ class PopularTopicsPage extends React.Component {
     }
 
     switch_topic(topic_id) {
-        if (this.state.current_topic_id == topic_id) {
-            this.setState({current_topic_id: null});
-        } else {
-            this.setState({current_topic_id: topic_id});
-        }
+        this.setState({current_topic_id: topic_id});
     }
     
     componentWillUnmount() {
@@ -129,54 +125,32 @@ class PopularTopicsPage extends React.Component {
     }
     
     render() {
+        var frame_id = null
         var frame_name = '';
         var heatmap = null
-        var topic_card_list = 'Loading Topics.'
-        var frame_id = null
-        var num_topics = 0
-        if (this.state.current_framesummary.frame_id != null) {
-            frame_name = this.state.current_framesummary.frame_name;
+        var topicIds = null
+        if (this.state.current_framesummary.frame_id !== null) {
             frame_id = this.state.current_framesummary.frame_id;
-            
+            frame_name = this.state.current_framesummary.frame_name;
             heatmap = this.state.current_framesummary.heatmap;
-
-            num_topics = this.state.current_framesummary.hot.length
-                 
-            if (this.state.current_framesummary.hot.length == 0) {
-                topic_card_list = 'No Topics found.'
-            }else{
-                var current_topic_id = this.state.current_topic_id
-                function compare_topic_id(s) {
-                    return (s === current_topic_id)
-                }
-                topic_card_list = this.state.current_framesummary.hot.map(
-                    (topic_id) => <TopicCard key={topic_id} 
-                                          onClick={this.switch_topic.bind(this)}
-                                          highlight={compare_topic_id(topic_id)}
-                                          topic_id={topic_id} 
-                                          frame_id={this.state.current_framesummary.frame_id}
-                                          size={[400,150]}/>)
-            }
-        }
-        if (this.state.current_framesummary != null) {
-        }
-        
+            topicIds = this.state.current_framesummary.hot;
+        }        
         
         if (this.state.mobile) {
             var topArea = null;
             if (this.state.tabIndex == 0) {
-                topArea = <Map className='flex-item-big' 
+                topArea = <Map className='flex-item'
                     frameID={this.state.frame_id} 
                     heatmap={heatmap}
                     blendingTime={500}/>
             } else {
-                topArea = <Chart className='flex-item-big' 
+                topArea = <Chart className='flex-item'
                     frame_id={this.state.frame_id}
                     topic_id={this.state.current_topic_id}
                     previous={this.previous_frame.bind(this)}
                     next={this.next_frame.bind(this)}/>
             }
-                
+            var divStyle = {height: '100px'};
             return <FrameContent vertical={true}>
                 <TabBar
                     activeIndex={this.state.tabIndex}
@@ -192,12 +166,11 @@ class PopularTopicsPage extends React.Component {
                         </span>
                     </Tab>
                 </TabBar>
-                <div className='flex-item flex-container-vertical'>
-                    {topArea}
-                    <div className='flex-item-big'>
-                        {/*topic_card_list*/}
-                    </div>
-                </div>
+                {topArea}
+                <TopicList className='flex-item'
+                    topicIds = {topicIds}
+                    frameId = {this.state.frame_id}
+                    onTopic = {this.switch_topic.bind(this)}/>
             </FrameContent>
         } else {
             return <FrameContent>
@@ -212,9 +185,10 @@ class PopularTopicsPage extends React.Component {
                         previous={this.previous_frame.bind(this)}
                         next={this.next_frame.bind(this)}/>
                 </div>
-                <div className='right-sheet'>
-                    {topic_card_list}
-                </div>
+                <TopicList className='right-sheet'
+                    topicIds = {topicIds}
+                    frameId = {this.state.frame_id}
+                    onTopic = {this.switch_topic.bind(this)}/>
             </FrameContent>
         }
     }

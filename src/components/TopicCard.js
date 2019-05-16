@@ -49,32 +49,57 @@ class TopicCard extends Component {
         this.simulation = null;
     }
     
-    shouldComponentUpdate(nextProps, nextState) {
-        if (this.props.topic_id != nextProps.topic_id ||
-            this.props.frame_id != nextProps.frame_id)
-        {
-            topicBuffer.get_topicframe(this.props.topic_id, this.props.frame_id, this.handleData.bind(this))
-        }
-        return false;
-    }
-
     componentDidMount() {
-        topicBuffer.get_topicframe(this.props.topic_id, this.props.frame_id, this.handleData.bind(this))
-        var elem1 = document.getElementsByClassName('right-sheet')[0];
-        elem1.addEventListener('scroll', this.handleScroll.bind(this), false);
+        this.addCallback()
+        topicBuffer.get_topicframe(this.props.topic_id, 
+            this.props.frame_id, this.handleData.bind(this))
     }
 
     componentWillUnmount() {
-        var elem1 = document.getElementsByClassName('right-sheet')[0];
-        elem1.removeEventListener('scroll', this.handleScroll.bind(this));
-        console.log('ByeBye')
+        this.removeCallback()
         if (this.simulation !== null) 
         {
             this.simulation.stop()
         }
     }
+    
+    shouldComponentUpdate(nextProps, nextState) {
+        if (this.props.topic_id != nextProps.topic_id ||
+            this.props.frame_id != nextProps.frame_id)
+        {
+            topicBuffer.get_topicframe(this.props.topic_id, 
+                this.props.frame_id, this.handleData.bind(this))
+        }
+        return false;
+    }
+    
+    addCallback() {
+        window.addEventListener('resize', 
+            this.checkVisibility.bind(this), false);
+        var topicLists = document.getElementsByClassName('topic-list');
+        for (var i=0; i < topicLists.length; ++i) {
+            topicLists[i].addEventListener('scroll', 
+                this.checkVisibility.bind(this), false);
+        }
+    }
+    
+    removeCallback() {
+        window.removeEventListener('resize', 
+            this.checkVisibility.bind(this), false);
+        var topicLists = document.getElementsByClassName('topic-list');
+        for (var i=0; i < topicLists.length; ++i) {
+            topicLists[i].removeEventListener('scroll', 
+                this.checkVisibility.bind(this), false);
+        }
+    }
+    
+    clicked() {
+        if (this.props.onClick) {
+            this.props.onClick(this.props.topic_id)
+        }
+    }
         
-    handleScroll() {
+    checkVisibility() {
         if (this.simulation !== null) {
             var isVisible = this.isVisible()
             if (isVisible) {
@@ -96,7 +121,7 @@ class TopicCard extends Component {
         }
         return null;
     }
-        
+    
     handleData(data) {
         // Stop simluation if it is still running
         if (this.simulation !== null) 
@@ -104,8 +129,12 @@ class TopicCard extends Component {
             this.simulation.stop()
         }
         
+        
         // add size information
-        var tokens = data.tokens.map(d => ({token: d[0], weight: d[1], size: textSize(d[0])}));
+        var tokens = []
+        if (data !== null) {
+            tokens = data.tokens.map(d => ({token: d[0], weight: d[1], size: textSize(d[0])}));
+        }
         
         // scale small values
         var area_sum = 0
@@ -155,13 +184,6 @@ class TopicCard extends Component {
             .stop();
         
         setTimeout(this.checkVisibility.bind(this), 0);        
-    }
-    
-    checkVisibility() {
-        var isVisible = this.isVisible();
-        if (isVisible === true) {
-            this.simulation.restart()
-        }
     }
     
     update_nodes() {
@@ -229,13 +251,6 @@ class TopicCard extends Component {
             node.ry = node.weight * node.size.height
         }
     }
-
-    
-    clicked() {
-        if (this.props.onClick) {
-            this.props.onClick(this.props.topic_id)
-        }
-    }
     
     render() {
         var content = null
@@ -277,44 +292,3 @@ class TopicCard extends Component {
     }
 }
 export default TopicCard
-
-
-
-//createBarChart() {
-//    const node = this.node
-//    const dataMax = max(this.props.data)
-//    const yScale = scaleLinear()
-//        .domain([0, dataMax])
-//        .range([0, this.props.size[1]])
-//    const width = this.props.size[0] / this.props.data.length
-//    select(node)
-//        .selectAll('rect')
-//        .data(this.props.data)
-//        .enter()
-//        .append('rect')
-//    
-//    select(node)
-//        .selectAll('rect')
-//        .data(this.props.data)
-//        .exit()
-//        .remove()
-//        
-//    select(node)
-//        .selectAll('rect')
-//        .data(this.props.data)
-//        .style('fill', '#fe9922')
-//        .attr('x', (d,i) => i * width)
-//        .attr('y', d => this.props.size[1] - 10)
-//        .attr('height', d => 10)
-//        .attr('width', width)
-//        
-//    select(node)
-//        .selectAll('rect')
-//        .transition()
-//        .delay(2000)
-//        .style('fill', '#fe9922')
-//        .attr('x', (d,i) => i * width)
-//        .attr('y', d => this.props.size[1] - yScale(d))
-//        .attr('height', d => yScale(d))
-//        .attr('width', width)
-//}
