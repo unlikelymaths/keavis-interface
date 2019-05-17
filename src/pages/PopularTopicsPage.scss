@@ -1,7 +1,9 @@
 
 .right-sheet {
+  flex: 1;
   border-color: rgba(0, 0, 0, 0.12);
   border-left-width: 1px;
   border-left-style: solid;
-  width: 400px;
+  min-width: 250px;
+  max-width: 450px;
 }
