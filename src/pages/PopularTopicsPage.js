@@ -22,6 +22,8 @@ class PopularTopicsPage extends React.Component {
     constructor(props) {
         super(props);
         this.mobileThreshold = 599;
+        this.mapLabel = 'Map'
+        this.chartLabel = 'Chart'
         this.state = {
             number: 0, 
             current_framesummary: {}, 
@@ -156,12 +158,12 @@ class PopularTopicsPage extends React.Component {
                     handleActiveIndexUpdate={this.handleActiveIndexUpdate.bind(this)}>
                     <Tab>
                         <span className='mdc-tab__text-label'>
-                            One
+                            {this.mapLabel}
                         </span>
                     </Tab>
                     <Tab>
                         <span className='mdc-tab__text-label'>
-                            Two
+                            {this.chartLabel}
                         </span>
                     </Tab>
                 </TabBar>
