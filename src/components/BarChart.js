@@ -22,6 +22,7 @@ class BarChart extends Component {
     }
     
     shouldComponentUpdate(nextProps, nextState) {
+        console.log(nextProps)
         if (this.topic_id != nextProps.topic_id || this.frame_id != nextProps.frame_id) {
             this.topic_id = nextProps.topic_id
             topicBuffer.get_topicframe(nextProps.topic_id, nextProps.frame_id, this.recieve_topicframe.bind(this))
@@ -82,7 +83,7 @@ class BarChart extends Component {
         // Initialize scales
         const side_margins = 40
         const lower_margin = 40
-        const upper_margin = 40
+        const upper_margin = 10
         const binWidth = (this.width - 2 * side_margins) / bg_data.length
         var dataMax = max(bg_data)
         if (fg_data.length > 0) {
@@ -215,8 +216,8 @@ class BarChart extends Component {
     render() {
         return <div className={'flex-item'}>
             <svg ref={this.svgRef}
-              width={this.props.size[0]} 
-              height={this.props.size[1]}>
+              width='100%' 
+              height='100%' >
             </svg>
             <ReactResizeDetector handleWidth handleHeight onResize={this.onResize.bind(this)} />
           </div>

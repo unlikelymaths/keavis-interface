@@ -8,9 +8,9 @@ import TabBar from '@material/react-tab-bar';
 import topicBuffer from '../TopicBuffer'
 import {FrameContent} from "../components/Frame";
 import Map from "../components/Map";
-import Chart from "../components/Chart";
+import BarChart from "../components/BarChart";
 import TopicList from "../components/TopicList";
-
+import FrameBar from "../components/FrameBar";
 
 import '@material/react-tab-bar/index.scss';
 import '@material/react-tab-scroller/index.scss';
@@ -21,7 +21,7 @@ import './PopularTopicsPage.scss';
 class PopularTopicsPage extends React.Component {
     constructor(props) {
         super(props);
-        this.mobileThreshold = 700;
+        this.mobileThreshold = 599;
         this.state = {
             number: 0, 
             current_framesummary: {}, 
@@ -145,11 +145,9 @@ class PopularTopicsPage extends React.Component {
                     heatmap={heatmap}
                     blendingTime={500}/>
             } else {
-                topArea = <Chart className='flex-item'
-                    frame_id={this.state.frame_id}
-                    topic_id={this.state.current_topic_id}
-                    previous={this.previous_frame.bind(this)}
-                    next={this.next_frame.bind(this)}/>
+                topArea = <BarChart className='flex-item' 
+                    frame_id={this.state.frame_id} 
+                    topic_id={this.state.current_topic_id}/>
             }
             var divStyle = {height: '100px'};
             return <FrameContent vertical={true}>
@@ -167,6 +165,10 @@ class PopularTopicsPage extends React.Component {
                         </span>
                     </Tab>
                 </TabBar>
+                <FrameBar
+                    label={frame_name}
+                    onPrevious={this.previous_frame.bind(this)}
+                    onNext={this.next_frame.bind(this)}/>
                 {topArea}
                 <TopicList className='flex-item'
                     topicIds = {topicIds}
@@ -176,15 +178,17 @@ class PopularTopicsPage extends React.Component {
         } else {
             return <FrameContent>
                 <div className='flex-item flex-container-vertical'>
-                {<Map className='flex-item-big' 
-                frameID={this.state.frame_id} 
-                heatmap={heatmap}
-                blendingTime={500}/>}
-                    <Chart className='flex-item' 
-                        frame_id={this.state.frame_id}
-                        topic_id={this.state.current_topic_id}
-                        previous={this.previous_frame.bind(this)}
-                        next={this.next_frame.bind(this)}/>
+                    <Map className='flex-item-big' 
+                        frameID={this.state.frame_id} 
+                        heatmap={heatmap}
+                        blendingTime={500}/>
+                    <FrameBar
+                        label={frame_name}
+                        onPrevious={this.previous_frame.bind(this)}
+                        onNext={this.next_frame.bind(this)}/>
+                    <BarChart className='flex-item' 
+                        frame_id={this.state.frame_id} 
+                        topic_id={this.state.current_topic_id}/>
                 </div>
                 <TopicList className='right-sheet'
                     topicIds = {topicIds}
