@@ -22,7 +22,6 @@ class BarChart extends Component {
     }
     
     shouldComponentUpdate(nextProps, nextState) {
-        console.log(nextProps)
         if (this.topic_id != nextProps.topic_id || this.frame_id != nextProps.frame_id) {
             this.topic_id = nextProps.topic_id
             topicBuffer.get_topicframe(nextProps.topic_id, nextProps.frame_id, this.recieve_topicframe.bind(this))

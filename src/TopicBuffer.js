@@ -43,7 +43,7 @@ class TopicBuffer {
                 this.framesummaries.insert(framesummary.frame_id, framesummary)
                 callback(framesummary)
             }
-            const request = api_base + 'framesummary/20190202'
+            const request = api_base + 'framesummary/201905251'
             $.getJSON(request, handle_data.bind(this));
         }
     }
@@ -81,7 +81,7 @@ class TopicBuffer {
                 this.topics.insert(key, topic)
                 callback(topic)
             }
-            var dataurl = api_base + 'topicframe/' + topic_id + '/' + frame_id;
+            var dataurl = api_base + 'topicframe/' + frame_id + '/' + topic_id;
             $.getJSON(dataurl, handle_data.bind(this));
         }
     }

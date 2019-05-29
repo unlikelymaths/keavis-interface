@@ -61,12 +61,12 @@ class PopularTopicsPage extends React.Component {
     }
     
     previous_frame() {
-        var frame_id = this.state.current_framesummary.frame_id - 1;
+        var frame_id = this.state.current_framesummary.id - 1;
         topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
     
     next_frame() {
-        var frame_id = this.state.current_framesummary.frame_id + 1;
+        var frame_id = this.state.current_framesummary.id + 1;
         topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
 
@@ -81,7 +81,7 @@ class PopularTopicsPage extends React.Component {
     recieve_framesummary(framesummary) {
         this.setState({
             current_framesummary: framesummary,
-            frame_id: framesummary.frame_id,
+            frame_id: framesummary.id,
             current_topic_id: null
             });
     }
@@ -128,23 +128,26 @@ class PopularTopicsPage extends React.Component {
     }
     
     render() {
-        var frame_id = null
+        var frame_id = null;
         var frame_name = '';
-        var heatmap = null
-        var topicIds = null
-        if (this.state.current_framesummary.frame_id !== null) {
-            frame_id = this.state.current_framesummary.frame_id;
-            frame_name = this.state.current_framesummary.frame_name;
-            heatmap = this.state.current_framesummary.heatmap;
-            topicIds = this.state.current_framesummary.hot;
+        var heatmapGrid = null;
+        var heatmapWeights = null;
+        var topicIds = null;
+        if (this.state.current_framesummary.id !== null) {
+            frame_id = this.state.current_framesummary.id;
+            frame_name = this.state.current_framesummary.name;
+            heatmapGrid = this.state.current_framesummary.heatmapGrid;
+            heatmapWeights = this.state.current_framesummary.heatmapWeights;
+            topicIds = this.state.current_framesummary.topic_ids;
         }        
-        
+
         if (this.state.mobile) {
             var topArea = null;
             if (this.state.tabIndex == 0) {
                 topArea = <Map className='flex-item'
                     frameID={this.state.frame_id} 
-                    heatmap={heatmap}
+                    grid={heatmapGrid}
+                    weights={heatmapWeights}
                     blendingTime={500}/>
             } else {
                 topArea = <BarChart className='flex-item' 
@@ -182,7 +185,8 @@ class PopularTopicsPage extends React.Component {
                 <div className='flex-item flex-container-vertical'>
                     <Map className='flex-item-big' 
                         frameID={this.state.frame_id} 
-                        heatmap={heatmap}
+                        grid={heatmapGrid}
+                        weights={heatmapWeights}
                         blendingTime={500}/>
                     <FrameBar
                         label={frame_name}

@@ -133,7 +133,7 @@ class TopicCard extends Component {
         // add size information
         var tokens = []
         if (data !== null) {
-            tokens = data.tokens.map(d => ({token: d[0], weight: d[1], size: textSize(d[0])}));
+            tokens = data.tokenList.map((d, i) => ({token: d, weight: data.tokenWeights[i], size: textSize(d)}));
         }
         
         // scale small values
