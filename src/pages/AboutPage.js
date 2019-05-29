@@ -1,11 +1,10 @@
 import $ from "jquery";
-import React from "react";
 
-import Button from '@material/react-button';
+import React from "react";
+import {Headline1, Body1} from '@material/react-typography';
 
 import {FrameContent} from "../components/Frame";
-
-
+import content from './AboutPage/content.json'
 
 class AboutPage extends React.Component {
     constructor(props) {
@@ -28,17 +27,14 @@ class AboutPage extends React.Component {
     }
     
     render() {
-        return <FrameContent className='frame-content flex-container'>
-        
-            <div className='flex-item flex-container'>
-                <div className='flex-item'>
-                    Hi
-                </div>
-                <div className='flex-item-big'>
-                    Hi
-                </div>
-            </div>
-        </FrameContent>
+        return <FrameContent vertical={true}>
+                <Headline1>
+                    {content.title}
+                </Headline1>
+                <Body1>
+                    {content.content}
+                </Body1>
+            </FrameContent>
     }
 }
 
