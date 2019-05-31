@@ -24,7 +24,8 @@ class HeatLayer {
     constructor(map, latLngs) {
         this.map = map;
         this.id = HeatLayer.heat_id_counter++;
-        this.addLayer(latLngs);
+        this.latLngs = latLngs;
+        this.addLayer();
         this.setOpacity(0);
     }
     
@@ -32,8 +33,8 @@ class HeatLayer {
         this.map.removeLayer(this.heatLayer)
     }
     
-    addLayer(latLngs) {
-        this.heatLayer = L.heatLayer(latLngs, HeatLayer.settings).addTo(this.map);
+    addLayer() {
+        this.heatLayer = L.heatLayer(this.latLngs, HeatLayer.settings).addTo(this.map);
         var theCanvases = document.getElementsByTagName("canvas");
         for (var i=0; i < theCanvases.length; i++) { 
             var myCanvas = theCanvases[i];
@@ -46,6 +47,12 @@ class HeatLayer {
         this.docElement = document.getElementById(this.id);
     }
     
+    update(weights) {
+        this.latLngs = this.latLngs.map((e,i) =>
+            [e[0], e[1], weights[i]]);
+        this.heatLayer.setLatLngs(this.latLngs)
+    }
+
     setOpacity(opacity) {
         if (opacity > 1) {
             opacity = 1;
@@ -84,6 +91,13 @@ class HeatLayerList {
         this.setTimer();
     }
     
+    updateLayer(weights) {
+        if (this.list.length == 0) {
+            return;
+        }
+        this.list[this.list.length-1].update(weights);
+    }
+
     removeLayer(idx) {
         this.list[idx].clear();
         this.list.splice(idx, 1);
@@ -180,7 +194,7 @@ class Map extends React.Component {
             topicBuffer.framesummary(this.frameId,
                 this.receiveFramesummary.bind(this))
         } else if (this.topicId == null) {
-            this.makeHeatmapLayer()
+            this.makeHeatmapLayer(true)
         }
         // Only load topicframe when is is needed
         if (this.topicId != null) {
@@ -195,7 +209,7 @@ class Map extends React.Component {
             return;
         }
         this.framesummary = framesummary;
-        this.makeHeatmapLayer();
+        this.makeHeatmapLayer(false);
     }
 
     receiveTopicframe(topicframe) {
@@ -205,7 +219,7 @@ class Map extends React.Component {
             return;
         }
         this.topicframe = topicframe;
-        this.makeHeatmapLayer();
+        this.makeHeatmapLayer(true);
     }
 
     grabEntry(weights, idx, binIdx) {
@@ -220,25 +234,41 @@ class Map extends React.Component {
         }
     }
 
-    makeHeatmapLayer() {
+    makeHeatmapLayer(update) {
         // Cannot create heatlayer without grid or topicframe (if required)
         if (this.framesummary == null ||
-            (this.topicId != null && this.topicframe == null)) {
+            (this.topicId != null && this.topicframe == null ||
+             this.heatLayers == null)) {
             return
         }
-        var latLngs = null;
-        if (this.topicId != null) {
-            latLngs = this.framesummary.heatmapGrid.map((e, i) =>
-                [e[1], e[0], this.grabEntry(
-                    this.topicframe.heatmapWeights,i,this.binIdx)]
-                );
+
+        if (update) {
+            console.log('update');
+            var weights = null;
+            if (this.topicId != null) {
+                weights = this.framesummary.heatmapGrid.map((e, i) =>
+                    this.grabEntry(
+                        this.topicframe.heatmapWeights,i,this.binIdx));
+            } else {
+                weights = this.framesummary.heatmapGrid.map((e, i) =>
+                    this.grabEntry(
+                        this.framesummary.heatmapWeights,i,this.binIdx));
+            }
+            this.heatLayers.updateLayer(weights);
         } else {
-            latLngs = this.framesummary.heatmapGrid.map((e, i) =>
-                [e[1], e[0], this.grabEntry(
-                    this.framesummary.heatmapWeights,i,this.binIdx)]
-                );
-        }
-        if (this.heatLayers != null) {
+            console.log('set');
+            var latLngs = null;
+            if (this.topicId != null) {
+                latLngs = this.framesummary.heatmapGrid.map((e, i) =>
+                    [e[1], e[0], this.grabEntry(
+                        this.topicframe.heatmapWeights,i,this.binIdx)]
+                    );
+            } else {
+                latLngs = this.framesummary.heatmapGrid.map((e, i) =>
+                    [e[1], e[0], this.grabEntry(
+                        this.framesummary.heatmapWeights,i,this.binIdx)]
+                    );
+            }
             this.heatLayers.addLayer(latLngs);
         }
     }
