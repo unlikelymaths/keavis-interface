@@ -51,8 +51,10 @@ class TopicCard extends Component {
     
     componentDidMount() {
         this.addCallback()
-        topicBuffer.get_topicframe(this.props.topic_id, 
-            this.props.frame_id, this.handleData.bind(this))
+        if (this.props.frame_id != null && this.props.topic_id != null) {
+            topicBuffer.topicframe(this.props.frame_id,
+                this.props.topic_id, this.handleData.bind(this));
+        }
     }
 
     componentWillUnmount() {
@@ -67,8 +69,8 @@ class TopicCard extends Component {
         if (this.props.topic_id != nextProps.topic_id ||
             this.props.frame_id != nextProps.frame_id)
         {
-            topicBuffer.get_topicframe(this.props.topic_id, 
-                this.props.frame_id, this.handleData.bind(this))
+            topicBuffer.topicframe(this.props.frame_id,
+                this.props.topic_id, this.handleData.bind(this))
         }
         return false;
     }
@@ -288,7 +290,6 @@ class TopicCard extends Component {
                 </CardPrimaryContent>
             </Card>
         </div>);
-        return 
     }
 }
 export default TopicCard

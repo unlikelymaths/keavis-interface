@@ -23,29 +23,49 @@ class BarChart extends Component {
     
     shouldComponentUpdate(nextProps, nextState) {
         if (this.topic_id != nextProps.topic_id || this.frame_id != nextProps.frame_id) {
-            this.topic_id = nextProps.topic_id
-            topicBuffer.get_topicframe(nextProps.topic_id, nextProps.frame_id, this.recieve_topicframe.bind(this))
+            this.topic_id = nextProps.topic_id;
+            this.requestTopicframe();
         }
         if (this.frame_id != nextProps.frame_id) {
-            this.frame_id = nextProps.frame_id
-            topicBuffer.get_framesummary(nextProps.frame_id, this.recieve_framesummary.bind(this))
+            this.frame_id = nextProps.frame_id;
+            this.requestFramesummary();
         }
         return false;
     }
 
     componentDidMount() {
-        this.frame_id = this.props.frame_id
-        this.topic_id = this.props.topic_id
-        topicBuffer.get_framesummary(this.frame_id, this.recieve_framesummary.bind(this))
-        topicBuffer.get_topicframe(this.topic_id, this.frame_id, this.recieve_topicframe.bind(this))
+        this.frame_id = this.props.frame_id;
+        this.topic_id = this.props.topic_id;
+        if (this.frame_id != null) {
+            this.requestFramesummary();
+            this.requestTopicframe();
+        }
     }
-    
-    recieve_framesummary(framesummary) {
+
+    requestFramesummary() {
+        if (this.frame_id != null) {
+            topicBuffer.framesummary(this.frame_id,
+                this.recieveFramesummary.bind(this));
+        }
+    }
+
+    recieveFramesummary(framesummary) {
         this.framesummary = framesummary
         this.createBarChart()
     }
-    
-    recieve_topicframe(topicframe) {
+
+    requestTopicframe() {
+        if (this.frame_id != null && this.topic_id != null) {
+            topicBuffer.topicframe(this.frame_id, this.topic_id,
+                this.recieveTopicframe.bind(this));
+        }
+        if (this.topic_id == null) {
+            this.topicframe = null;
+            this.createBarChart();
+        }
+    }
+
+    recieveTopicframe(topicframe) {
         this.topicframe = topicframe
         this.createBarChart()
     }

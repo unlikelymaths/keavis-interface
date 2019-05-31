@@ -2,87 +2,203 @@ import $ from 'jquery';
 
 const api_base = 'data/'
 
-class LimitBuffer {
-    constructor(max_len) {
-        this.data = {}
-        this.max_len = max_len
+class BufferEntry {
+
+    constructor(value) {
+        this.value = value;
+        this.lastAccess = new Date();
     }
-    
-    insert(key, obj) {
-        this.data[key] = obj
-    }
-    
-    get(key) {
-        return this.data[key]
-    }
-    
-    contains(key) {
-        return this.data.hasOwnProperty(key)
+
+    getValue() {
+        this.lastAccess = new Date();
+        return this.value;
     }
 }
 
-function make_key(obj1, obj2) {
-    return String(obj1) + String(obj2)
+class LimitBuffer {
+    constructor(maxLength) {
+        this.data = {};
+        this.maxLength = maxLength;
+    }
+
+    insert(key, obj) {
+        this.data[key] = new BufferEntry(obj);
+        this.prune();
+    }
+    
+    prune() {
+        if (this.maxLength > 0) {
+            var keys = Object.keys(this.data);
+            while (keys.length > this.maxLength) {
+                var oldestKey = keys[0];
+                var oldestTime = this.data[keys[0]].lastAccess;
+                for (var i=1; i<keys.length; ++i) {
+                    if (this.data[keys[i]].lastAccess < oldestTime) {
+                        oldestKey = keys[i];
+                        oldestTime = this.data[keys[i]].lastAccess;
+                    }
+                }
+                delete this.data[oldestKey];
+                keys = Object.keys(this.data);
+                console.debug('Pruning key "%s" from Buffer', oldestKey)
+            }
+        }
+    }
+
+    get(key) {
+        return this.data[key].getValue();
+    }
+
+    contains(key) {
+        return this.data.hasOwnProperty(key);
+    }
 }
+
+class RequestList {
+
+    constructor() {
+        this.requests = {}
+    }
+
+    push(key, callback) {
+        if (this.contains(key)) {
+            this.requests[key].push(callback)
+        } else {
+            this.requests[key] = [callback]
+        }
+    }
+
+    pop(key) {
+        const callbacks = this.requests[key]
+        delete this.requests[key]
+        return callbacks
+    }
+
+    contains(key) {
+        return this.requests.hasOwnProperty(key)
+    }
+}
+
+var Key = {}
+
+Key.latest = function() {
+    return 'latest';
+};
+Key.framesummary = function(frameID) {
+    return 'fs:' + String(frameID);
+};
+Key.topicframe = function(frameID, topicID) {
+    return 'tf:' + String(frameID) + ':' + String(topicID);
+};
 
 class TopicBuffer {
 
     constructor() {
-        this.latest_frame_id = null;
-        this.topics = new LimitBuffer(100);
-        this.framesummaries = new LimitBuffer(100);
+        this.frameIDs = null;
+        this.latestframeID = null;
+        this.topicframes = new LimitBuffer(100);
+        this.framesummaries = new LimitBuffer(10);
+        this.requests = new RequestList();
+        this.getframeIDs()
     }
-    
-    // callback(framesummary)
-    get_latest_framesummary(callback) {
-        if (this.latest_frame_id != null) {
-            this.get_framesummary(this.latest_frame_id, callback);
-        } else {
-            function handle_data(framesummary) {
-                this.latest_frame_id = framesummary.frame_id
-                this.framesummaries.insert(framesummary.frame_id, framesummary)
-                callback(framesummary)
-            }
-            const request = api_base + 'framesummary/201905251'
-            $.getJSON(request, handle_data.bind(this));
+
+    getframeIDs() {
+        const request = api_base + 'frameIDs';
+        $.getJSON(request, this.handleframeIDs.bind(this))
+            .fail(a => console.error('Cannot retrieve frameIDs'));
+    }
+
+    handleframeIDs(frameIDs) {
+        this.frameIDs = frameIDs
+        this.latestframeID = frameIDs[frameIDs.length - 1];
+        const callbacks = this.requests.pop(Key.latest())
+        for(const callback of callbacks) {
+            this.framesummary(this.latestframeID, callback)
         }
     }
-    
-    // callback(framesummary)
-    get_framesummary(frame_id, callback) {
-        if (frame_id == null) {
+
+    // Framesummary
+    latestFramesummary(callback) {
+        if (this.latestframeID !== null) {
+            this.framesummary(this.latestframeID, callback);
+        } else {
+            this.requests.push(Key.latest(), callback)
+        }
+    }
+
+    framesummary(frameID, callback) {
+        if (frameID == null) {
+            console.warn('Empty frameID in call to framesummary')
             callback(null)
             return
         }
-        if (this.framesummaries.contains(frame_id)) {
-            callback(this.framesummaries.get(frame_id))
+        const key = Key.framesummary(frameID)
+        if (this.framesummaries.contains(key)) {
+            callback(this.framesummaries.get(key))
+        } else if (this.requests.contains(key)) {
+            this.requests.push(key,callback)
         } else {
-            function handle_data(framesummary) {
-                this.latest_frame_id = framesummary.frame_id
-                this.framesummaries.insert(framesummary.frame_id, framesummary)
-                callback(framesummary)
-            }
-            const request = api_base + 'framesummary/' + frame_id
-            $.getJSON(request, handle_data.bind(this));
+            this.requests.push(key,callback)
+            const request = api_base + 'framesummary/' + frameID
+            const onSuccess = (framesummary =>
+                this.handleFramesummary(key, framesummary));
+            const onError = (() =>
+                this.handleFramesummary(key, null));
+            $.getJSON(request, onSuccess).fail(onError);
         }
     }
-    
-    // callback(topic)
-    get_topicframe(topic_id, frame_id, callback) {
-        if (topic_id == null || frame_id == null) {
+
+    handleFramesummary(key, framesummary) {
+        const callbacks = this.requests.pop(key);
+        if (framesummary === null) {
+            console.warn('Cannot load framesummary for key "%s".',key);
+        } else {
+            console.debug('Loaded framesummary for key "%s".',key);
+            this.framesummaries.insert(key, framesummary);
+        }
+        for(const callback of callbacks) {
+            callback(framesummary);
+        }
+    }
+
+    // Topicframe
+    topicframe(frameID, topicID, callback) {
+        if (frameID == null) {
+            console.warn('Empty frameID in call to topicframe for "%o"',callback)
             callback(null)
             return
         }
-        var key = make_key(topic_id, frame_id)
-        if (this.topics.contains(key)) {
-            callback(this.topics.get(key))
+        if (topicID == null) {
+            console.warn('Empty topicID in call to topicframe')
+            callback(null)
+            return
+        }
+        const key = Key.topicframe(frameID, topicID)
+        if (this.topicframes.contains(key)) {
+            callback(this.topicframes.get(key))
+        } else if (this.requests.contains(key)) {
+            this.requests.push(key,callback)
         } else {
-            function handle_data(topic) {
-                this.topics.insert(key, topic)
-                callback(topic)
-            }
-            var dataurl = api_base + 'topicframe/' + frame_id + '/' + topic_id;
-            $.getJSON(dataurl, handle_data.bind(this));
+            this.requests.push(key,callback)
+            const request = api_base + 'topicframe/' + frameID + '/' + topicID;
+            const onSuccess = (topicframe =>
+                this.handleTopicframe(key, topicframe));
+            const onError = (() =>
+                this.handleTopicframe(key, null));
+            $.getJSON(request, onSuccess).fail(onError);
+        }
+    }
+
+    handleTopicframe(key, topicframe) {
+        const callbacks = this.requests.pop(key);
+        if (topicframe === null) {
+            console.warn('Cannot load topicframe for key "%s".',key);
+        } else {
+            console.debug('Loaded topicframe for key "%s".',key);
+            this.topicframes.insert(key, topicframe);
+        }
+        for(const callback of callbacks) {
+            callback(topicframe);
         }
     }
 }

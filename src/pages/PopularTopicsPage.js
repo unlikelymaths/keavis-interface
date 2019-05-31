@@ -35,7 +35,7 @@ class PopularTopicsPage extends React.Component {
     }
     
     componentDidMount() {
-        topicBuffer.get_latest_framesummary(this.recieve_framesummary.bind(this))
+        topicBuffer.latestFramesummary(this.recieve_framesummary.bind(this))
         $(document).keypress(this.keypress.bind(this));
         window.addEventListener('resize', this.onWindowSize.bind(this));
     }
@@ -62,12 +62,12 @@ class PopularTopicsPage extends React.Component {
     
     previous_frame() {
         var frame_id = this.state.current_framesummary.id - 1;
-        topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
+        topicBuffer.framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
     
     next_frame() {
         var frame_id = this.state.current_framesummary.id + 1;
-        topicBuffer.get_framesummary(frame_id, this.recieve_framesummary.bind(this))
+        topicBuffer.framesummary(frame_id, this.recieve_framesummary.bind(this))
     }
 
     switch_topic(topic_id) {
