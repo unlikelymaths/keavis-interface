@@ -140,7 +140,7 @@ class Map extends React.Component {
         if (nextProps.frameID != this.currentFrameID) {
             this.currentFrameID = nextProps.frameID;
             var latLngs = nextProps.grid.map(function(e, i) {
-                return [e[1], e[0], nextProps.weights[i]];
+                return [e[1], e[0], nextProps.weights[i][0]];
             });
             if (this.heatLayers != null) {
                 this.heatLayers.addLayer(latLngs);
