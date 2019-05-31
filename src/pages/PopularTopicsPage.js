@@ -26,11 +26,12 @@ class PopularTopicsPage extends React.Component {
         this.chartLabel = 'Chart'
         this.state = {
             number: 0, 
-            current_framesummary: {}, 
+            current_framesummary: null,
             current_topic_id: null, 
             current_idx: 0,
             mobile: (window.innerWidth <= this.mobileThreshold),
-            tabIndex: 0
+            tabIndex: 0,
+            binIdx: null
             };
     }
     
@@ -127,13 +128,18 @@ class PopularTopicsPage extends React.Component {
         this.setState({ tabIndex: tabIndex });
     }
     
+    handleBinIdx(binIdx) {
+        this.setState({binIdx: binIdx });
+    }
+
     render() {
         var frame_id = null;
         var frame_name = '';
         var heatmapGrid = null;
         var heatmapWeights = null;
         var topicIds = null;
-        if (this.state.current_framesummary.id !== null) {
+
+        if (this.state.current_framesummary !== null) {
             frame_id = this.state.current_framesummary.id;
             frame_name = this.state.current_framesummary.name;
             heatmapGrid = this.state.current_framesummary.heatmapGrid;
@@ -145,14 +151,17 @@ class PopularTopicsPage extends React.Component {
             var topArea = null;
             if (this.state.tabIndex == 0) {
                 topArea = <Map className='flex-item'
-                    frameID={this.state.frame_id} 
+                    frameId={frame_id}
+                    topicId={this.state.current_topic_id}
+                    binIdx={this.state.binIdx}
                     grid={heatmapGrid}
                     weights={heatmapWeights}
                     blendingTime={500}/>
             } else {
                 topArea = <BarChart className='flex-item' 
                     frame_id={this.state.frame_id} 
-                    topic_id={this.state.current_topic_id}/>
+                    topic_id={this.state.current_topic_id}
+                    onBinIdx={this.handleBinIdx.bind(this)}/>
             }
             var divStyle = {height: '100px'};
             return <FrameContent vertical={true}>
@@ -184,7 +193,9 @@ class PopularTopicsPage extends React.Component {
             return <FrameContent>
                 <div className='flex-item flex-container-vertical'>
                     <Map className='flex-item-big' 
-                        frameID={this.state.frame_id} 
+                        frameId={frame_id}
+                        topicId={this.state.current_topic_id}
+                        binIdx={this.state.binIdx}
                         grid={heatmapGrid}
                         weights={heatmapWeights}
                         blendingTime={500}/>
@@ -194,7 +205,8 @@ class PopularTopicsPage extends React.Component {
                         onNext={this.next_frame.bind(this)}/>
                     <BarChart className='flex-item' 
                         frame_id={this.state.frame_id} 
-                        topic_id={this.state.current_topic_id}/>
+                        topic_id={this.state.current_topic_id}
+                        onBinIdx={this.handleBinIdx.bind(this)}/>
                 </div>
                 <TopicList className='right-sheet'
                     topicIds = {topicIds}
