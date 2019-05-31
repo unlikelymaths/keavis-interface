@@ -19,6 +19,9 @@ class BarChart extends Component {
         this.height = null
         this.width = null
         this.drawGroup = null
+        this.xScale = null
+        this.binIdx = null
+        this.binPos = null
     }
     
     shouldComponentUpdate(nextProps, nextState) {
@@ -39,6 +42,55 @@ class BarChart extends Component {
         if (this.frame_id != null) {
             this.requestFramesummary();
             this.requestTopicframe();
+        }
+        if (this.svgRef.current != null) {
+            this.svgRef.current.addEventListener('mouseenter', this.onMouseEnter.bind(this));
+            this.svgRef.current.addEventListener('mouseleave', this.onMouseExit.bind(this));
+        }
+    }
+
+    onMouseEnter() {
+        if (this.svgRef.current != null) {
+            this.svgRef.current.addEventListener('mousemove', this.onMouseMove.bind(this));
+        }
+    }
+
+    onMouseExit() {
+        if (this.svgRef.current != null) {
+            this.svgRef.current.removeEventListener('mousemove', this.onMouseMove.bind(this));
+        }
+        this.setBinPos(null);
+    }
+
+    onMouseMove(e) {
+        if (this.xScale != null && this.svgRef.current != null) {
+            var rect = this.svgRef.current.getBoundingClientRect();
+            var mousePos = this.xScale.invert(e.clientX - rect.left);
+            this.setBinPos(mousePos);
+        }
+    }
+
+    setBinPos(binPos) {
+        if ((this.framesummary === null) ||
+            (binPos < 0) ||
+            (binPos >= this.framesummary.counts.length)) {
+            binPos = null;
+        }
+        if (this.binPos == binPos) {
+            return;
+        } else {
+            this.binPos = binPos;
+            if (this.props.onBinPos != null) {
+                this.props.onBinPos(this.binPos)
+            }
+            var binIdx = (binPos != null) ? Math.floor(binPos) : null;
+            if (this.binIdx != binIdx) {
+                this.binIdx = binIdx;
+                if (this.props.onBinIdx != null) {
+                    this.props.onBinIdx(this.binIdx)
+                }
+                this.createBarChart()
+            }
         }
     }
 
@@ -69,7 +121,7 @@ class BarChart extends Component {
         this.topicframe = topicframe
         this.createBarChart()
     }
-    
+
     createBarChart(is_resize = false) {
         // Ensure that background data has arrived
         if (this.framesummary === null) {
@@ -117,6 +169,7 @@ class BarChart extends Component {
         const xScale = scaleLinear()
             .domain([0, bg_data.length])
             .range([side_margins, this.width - side_margins])
+        this.xScale = xScale;
         
         // Draw axis
         node.selectAll('#bar_chart_x_axis')
@@ -175,7 +228,7 @@ class BarChart extends Component {
             
         node.selectAll('rect.bg')
             .data(bg_data)
-            .style('fill', '#fe9922')
+            .style('fill', (d,i) => (i == this.binIdx) ? '#000066' : '#fe9922')
             .attr('x', (d,i) => xScale(i))
             .attr('width', binWidth)
             .attr('y', -height+lower_margin)
@@ -234,12 +287,10 @@ class BarChart extends Component {
 
     render() {
         return <div className={'flex-item'}>
-            <svg ref={this.svgRef}
-              width='100%' 
-              height='100%' >
-            </svg>
-            <ReactResizeDetector handleWidth handleHeight onResize={this.onResize.bind(this)} />
-          </div>
+              <svg ref={this.svgRef} width='100%' height='100%' />
+              <ReactResizeDetector handleWidth handleHeight
+                onResize={this.onResize.bind(this)} />
+            </div>
     }
     
     onResize(width, height) {
