@@ -25,7 +25,7 @@ class PopularTopicsPage extends React.Component {
         this.mapLabel = 'Map'
         this.chartLabel = 'Chart'
         this.state = {
-            number: 0, 
+            frameIds: null,
             current_framesummary: null,
             current_topic_id: null, 
             current_idx: 0,
@@ -36,6 +36,7 @@ class PopularTopicsPage extends React.Component {
     }
     
     componentDidMount() {
+        topicBuffer.frameIDs(this.recieveFrameIds.bind(this));
         topicBuffer.latestFramesummary(this.recieve_framesummary.bind(this))
         $(document).keypress(this.keypress.bind(this));
         window.addEventListener('resize', this.onWindowSize.bind(this));
@@ -52,23 +53,53 @@ class PopularTopicsPage extends React.Component {
     keypress(e) {
         switch(e.keyCode) {
         case 37: // Arrow Left
-            this.previous_frame()
+            this.setPreviousFrame()
             break;
         case 39: // Arrow Right
-            this.next_frame()
+            this.setNextFrame()
             break;
         default:
         } 
     }
-    
-    previous_frame() {
-        var frame_id = this.state.current_framesummary.id - 1;
-        topicBuffer.framesummary(frame_id, this.recieve_framesummary.bind(this))
+
+    prevFrameId() {
+        if (this.state.frameIds == null ||
+            this.state.current_framesummary == null) {
+            return null;
+        }
+        const idx = this.state.frameIds.indexOf(this.state.current_framesummary.id);
+        if (idx == -1 ||
+            idx == 0) {
+            return null;
+        }
+        return this.state.frameIds[idx-1]
     }
-    
-    next_frame() {
-        var frame_id = this.state.current_framesummary.id + 1;
-        topicBuffer.framesummary(frame_id, this.recieve_framesummary.bind(this))
+
+    setPreviousFrame() {
+        const frameId = this.prevFrameId();
+        if (frameId != null) {
+            topicBuffer.framesummary(frameId, this.recieve_framesummary.bind(this))
+        }
+    }
+
+    nextFrameId() {
+        if (this.state.frameIds == null ||
+            this.state.current_framesummary == null) {
+            return null;
+        }
+        const idx = this.state.frameIds.indexOf(this.state.current_framesummary.id);
+        if (idx == -1 ||
+            idx == this.state.frameIds.length - 1) {
+            return null;
+        }
+        return this.state.frameIds[idx+1]
+    }
+
+    setNextFrame() {
+        const frameId = this.nextFrameId();
+        if (frameId != null) {
+            topicBuffer.framesummary(frameId, this.recieve_framesummary.bind(this))
+        }
     }
 
     switch_topic(topic_id) {
@@ -87,6 +118,10 @@ class PopularTopicsPage extends React.Component {
             });
     }
     
+    recieveFrameIds(frameIds) {
+        this.setState({frameIds: frameIds});
+    }
+
     switchDrawerOpen() {
         this.setState({
             drawerOpen: !this.state.drawerOpen
@@ -99,12 +134,6 @@ class PopularTopicsPage extends React.Component {
             });
     }
 
-    tick() {
-        this.setState({
-            number: this.state.number + 1
-            });
-    }
-    
     next_topics() {
         if (this.state.current_framesummary) {
             var new_idx = Math.min((this.state.current_idx + 4), this.state.current_framesummary.hot.length - 4)
@@ -181,8 +210,8 @@ class PopularTopicsPage extends React.Component {
                 </TabBar>
                 <FrameBar
                     label={frame_name}
-                    onPrevious={this.previous_frame.bind(this)}
-                    onNext={this.next_frame.bind(this)}/>
+                    onPrevious={this.setPreviousFrame.bind(this)}
+                    onNext={this.setNextFrame.bind(this)}/>
                 {topArea}
                 <TopicList className='flex-item'
                     topicIds = {topicIds}
@@ -201,8 +230,8 @@ class PopularTopicsPage extends React.Component {
                         blendingTime={500}/>
                     <FrameBar
                         label={frame_name}
-                        onPrevious={this.previous_frame.bind(this)}
-                        onNext={this.next_frame.bind(this)}/>
+                        onPrevious={this.setPreviousFrame.bind(this)}
+                        onNext={this.setNextFrame.bind(this)}/>
                     <BarChart className='flex-item' 
                         frame_id={this.state.frame_id} 
                         topic_id={this.state.current_topic_id}

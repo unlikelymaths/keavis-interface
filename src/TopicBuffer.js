@@ -69,9 +69,13 @@ class RequestList {
     }
 
     pop(key) {
-        const callbacks = this.requests[key]
-        delete this.requests[key]
-        return callbacks
+        if (this.contains(key)) {
+            const callbacks = this.requests[key]
+            delete this.requests[key]
+            return callbacks
+        } else {
+            return [];
+        }
     }
 
     contains(key) {
@@ -81,6 +85,9 @@ class RequestList {
 
 var Key = {}
 
+Key.frameIDs = function() {
+    return 'frameIDs';
+};
 Key.latest = function() {
     return 'latest';
 };
@@ -94,26 +101,50 @@ Key.topicframe = function(frameID, topicID) {
 class TopicBuffer {
 
     constructor() {
-        this.frameIDs = null;
+        this.frameIdList = null;
         this.latestframeID = null;
         this.topicframes = new LimitBuffer(100);
         this.framesummaries = new LimitBuffer(10);
         this.requests = new RequestList();
-        this.getframeIDs()
+        this.frameIDs(()=>null)
     }
 
-    getframeIDs() {
-        const request = api_base + 'frameIDs';
-        $.getJSON(request, this.handleframeIDs.bind(this))
-            .fail(a => console.error('Cannot retrieve frameIDs'));
+    frameIDs(callback) {
+        const key = Key.frameIDs()
+        if (this.frameIdList != null) {
+            callback(this.frameIdList);
+        } else if (this.requests.contains(key)) {
+            this.requests.push(key,callback)
+        } else {
+            this.requests.push(key,callback)
+            const request = api_base + 'frameIDs';
+            const onSuccess = (frameIDs =>
+                this.handleframeIDs(key, frameIDs));
+            const onError = (() =>
+                this.handleframeIDs(key, null));
+            $.getJSON(request, onSuccess).fail(onError);
+        }
     }
 
-    handleframeIDs(frameIDs) {
-        this.frameIDs = frameIDs
-        this.latestframeID = frameIDs[frameIDs.length - 1];
-        const callbacks = this.requests.pop(Key.latest())
+    handleframeIDs(key, frameIDs) {
+        const callbacks = this.requests.pop(key);
+        if (frameIDs === null) {
+            console.warn('Cannot load frameIDs.');
+            const latestCallbacks = this.requests.pop(Key.latest())
+            for(const callback of latestCallbacks) {
+                callback(null);
+            }
+        } else {
+            console.debug('Loaded frameIDs');
+            this.frameIdList = frameIDs;
+            this.latestframeID = this.frameIdList[this.frameIdList.length - 1];
+            const latestCallbacks = this.requests.pop(Key.latest())
+            for(const callback of latestCallbacks) {
+                this.framesummary(this.latestframeID, callback)
+            }
+        }
         for(const callback of callbacks) {
-            this.framesummary(this.latestframeID, callback)
+            callback(frameIDs);
         }
     }
 
