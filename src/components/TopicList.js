@@ -38,12 +38,12 @@ class TopicList extends Component {
             topicList = 'Loading...'
         } else {
             topicList = this.props.topicIds.map(
-                (topic_id) => <TopicCard key={topic_id}
+                (topicId) => <TopicCard key={topicId}
                     onClick={this.switch_topic.bind(this)}
-                    highlight={(topicId) => topicId == this.state.currentTopicId}
-                    topic_id={topic_id} 
-                    frame_id={this.props.frameId}
-                    size={[400,150]}/>)
+                    highlight={topicId == this.state.currentTopicId}
+                    topicId={topicId}
+                    frameId={this.props.frameId}
+                    size={[200,50]}/>)
         }
         return <div 
             style={this.props.style}
