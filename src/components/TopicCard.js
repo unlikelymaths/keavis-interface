@@ -130,7 +130,8 @@ class TopicCard extends Component {
         } else {
             return <WordCloud size={this.state.size}
                         visible={this.state.visible}
-                        topicframe={this.state.topicframe}/>
+                        topicframe={this.state.topicframe}
+                        binIdx={this.props.binIdx}/>
         }
     }
 

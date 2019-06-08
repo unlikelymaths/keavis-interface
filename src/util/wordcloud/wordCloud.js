@@ -7,6 +7,9 @@ import { transition} from "d3-transition"
 import { forceSimulation, forceX, forceY, forceRadial, forceCenter} from "d3-force"
 import ellipseCollide from './ellipseCollide'
 
+const MAX_TOKENS = 10;
+const FONT_BASE = 10;
+const MIN_WEIGHT_SCALE = 0.5;
 
 function textSize(text) {
     var compression = 0.5
@@ -15,7 +18,7 @@ function textSize(text) {
              .attr('x', -99999)
              .attr('y', -99999)
              .text(text)
-             .style("font-size", '10px')
+             .style("font-size", FONT_BASE)
              .style('font-family', 'Arial,Helvetica')
              .style('font-weight', 'bold');
     var size = container.node().getBBox();
@@ -28,14 +31,22 @@ function textSize(text) {
 
 class Tokenset {
 
-    constructor(topicframe) {
-        this.tokens = topicframe.tokenList.map(
-            (d,i) => ({token: d, 
-                       weight: topicframe.tokenWeights[i][0], 
-                       size: textSize(d)})
-            );
-        if (this.tokens.length > 30) {
-            this.tokens = this.tokens.splice(0,30);
+    constructor(topicframe, binIdx) {
+        if (binIdx == null) {
+            this.tokens = topicframe.tokenList.map(
+                (d,i) => ({token: d,
+                        weight: topicframe.tokenWeights[i][0],
+                        size: textSize(d)})
+                );
+        } else {
+            this.tokens = topicframe.tokenList.map(
+                (d,i) => ({token: d,
+                        weight: topicframe.tokenWeights[i][1][binIdx],
+                        size: textSize(d)})
+                );
+        }
+        if (this.tokens.length > MAX_TOKENS) {
+            this.tokens = this.tokens.splice(0,MAX_TOKENS);
         }
         this.areaSum = null;
         this.rawMaxWeight = null;
@@ -86,60 +97,94 @@ class WordCloud extends Component {
         super(props)
         this.ref = React.createRef();
         this.simulation = null;
+        this.simulationRunning = false;
     }
     
     componentDidMount() {
         if (this.props.topicframe != null) {
-            this.setNewData(new Tokenset(this.props.topicframe));
+            this.setNewData(new Tokenset(this.props.topicframe),
+                            this.props.size);
         }
     }
 
     componentWillUnmount() {
-        if (this.simulation !== null) 
-        {
-            this.simulation.stop()
-        }
+        this.stopSimulation();
     }
     
     shouldComponentUpdate(nextProps, nextState) {
-        this.setSize(nextProps.size);
-        if (nextProps.topicframe != null &&
-            this.props.topicframe == null) {
-            this.setNewData(new Tokenset(nextProps.topicframe));
-        } else if (nextProps.topicframe != null &&
-                   this.props.topicframe != null) {
-            this.updateData(new Tokenset(nextProps.topicframe));    
+        const currentFrame = this.props.topicframe;
+        const nextFrame = nextProps.topicframe;
+        const size = nextProps.size;
+        var sizeChanged = false;
+        if (size.width != this.props.size.width ||
+            size.height != this.props.size.height) {
+            this.setSize(size);
+            sizeChanged = true;
         }
-        if (this.simulation != null) {
-            if (nextProps.visible) {
-                this.simulation.restart()
-            } else {
-                this.simulation.stop();
+        if (nextFrame != null && currentFrame == null) {
+                console.log('setNewData');
+            this.setNewData(new Tokenset(nextFrame), size);
+        } else if (nextFrame != null && currentFrame != null) {
+            if (nextFrame.topicId != currentFrame.topicId) {
+                console.log('setNewData');
+                this.setNewData(new Tokenset(nextFrame), size);
+            } else if (nextFrame.frameId != currentFrame.frameId ||
+                       nextProps.binIdx != this.props.binIdx) {
+                this.updateData(new Tokenset(nextFrame, nextProps.binIdx),
+                                size);
+            } else if (sizeChanged) {
+                this.updateData(this.tokenset, size);
             }
+        }
+        if (nextProps.visible) {
+            this.startSimulation()
+        } else {
+            this.stopSimulation();
         }
         return false;
     }
 
-    setSize(size) {
-        this.node.setAttribute('width', size.width)
-        this.node.setAttribute('height', size.height)
+    startSimulation() {
+        if (this.simulation != null &&
+            this.simulationRunning == false) {
+            this.simulation.restart();
+            this.simulationRunning = true;
+        }
     }
 
-    
-    setNewData(tokenset) {
+    stopSimulation() {
+        if (this.simulation != null &&
+            this.simulationRunning == true) {
+            this.simulation.stop();
+            this.simulationRunning = false;
+        }
+    }
+
+    setSize(size) {
+        const xScale = size.width / this.props.size.width;
+        const yScale = size.height / this.props.size.height;
+        this.node.setAttribute('width', size.width);
+        this.node.setAttribute('height', size.height);
+        if (this.nodes != null) {
+            for(var i=0; i<this.nodes.length; ++i) {
+                this.nodes[i].x *= xScale;
+                this.nodes[i].y *= yScale;
+            }
+        }
+    }
+
+    setNewData(tokenset, size) {
         this.nodes = [];
-        this.updateData(tokenset);
+        this.updateData(tokenset, size);
     }
     
-    updateData(tokenset) {
+    updateData(tokenset, size) {
         // Stop simluation if it is still running
-        if (this.simulation !== null) {
-            this.simulation.stop()
-        }
+        this.stopSimulation()
         
         // Set tokenset
         this.tokenset = tokenset;
-        var tokens = this.tokenset.scaledTokens(this.props.size);
+        var tokens = this.tokenset.scaledTokens(size);
 
         // Set target weights to zero
         for (var i=0; i < this.nodes.length; ++i) {
@@ -147,10 +192,11 @@ class WordCloud extends Component {
         }
         
         // Update target weights or append nodes
-        var center = [this.props.size.width / 2, this.props.size.height / 2]
+        var center = [size.width / 2, size.height / 2]
         for (var i=0; i < tokens.length; ++i) {
             const token = tokens[i];
-            var nodeIdx = this.nodes.findIndex(node => (node.token == token.token));
+            var nodeIdx = this.nodes.findIndex(
+                node => (node.token == token.token));
             if (nodeIdx == -1) {
                 this.nodes.push({
                     x: center[0] + 0.75 * (2 * Math.random() - 1) * center[0], 
@@ -158,7 +204,7 @@ class WordCloud extends Component {
                     size: token.size,
                     rx: token.weight * token.size.width, 
                     ry: token.weight * token.size.height, 
-                    weight: token.weight / 10, 
+                    weight: this.tokenset.minWeight * MIN_WEIGHT_SCALE,
                     weightTarget: token.weight, 
                     token: token.token});
             } else {
@@ -167,21 +213,25 @@ class WordCloud extends Component {
         }
         
         this.simulation = forceSimulation(this.nodes)
-            .force('centerX', forceX(this.props.size.width / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
-            .force('centerY', forceY(this.props.size.height / 2).strength(d => 1 * Math.pow(d.weightTarget,2)))
+            .force('centerX', forceX(size.width / 2).strength(
+                d => 1 * Math.pow(d.weightTarget,2)))
+            .force('centerY', forceY(size.height / 2).strength(
+                d => 1 * Math.pow(d.weightTarget,2)))
             .force('collide', ellipseCollide())
             .velocityDecay(0.5)
             .alphaDecay(0.01)
             .on('tick', this.update_nodes.bind(this))
             .on('end', function() { })
             .stop();
-        this.simulation.restart()
+        this.startSimulation();
     }
     
     update_nodes() {
-        const show_collision = false
-        this.count = this.count + 1
-        const node = this.node
+        const show_collision = false;
+        const weightThreshold = this.tokenset.minWeight * MIN_WEIGHT_SCALE;
+        this.nodes = this.nodes.filter(node => node.weightTarget > 0 ||
+                                               node.weight >= weightThreshold);
+        const node = this.node;
         
         var color = scaleLinear()
             .domain([this.min_weight, this.max_weight])  
@@ -233,7 +283,7 @@ class WordCloud extends Component {
         //}
         selection.attr("x", function(d) { return d.x; })
             .attr("y", function(d) { return d.y; })
-            .style("font-size", function(d){return (d.weight * 10).toFixed(1) + "px";})
+            .style("font-size", d => (d.weight*FONT_BASE).toFixed(1) + "px")
             .style('fill', d => color(d.weight))
             
         for (let i=0; i < this.nodes.length; i++) {

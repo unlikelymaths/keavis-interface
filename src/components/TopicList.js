@@ -1,4 +1,5 @@
 import React,{Component} from "react";
+import PropTypes from 'prop-types';
 
 import TopicCard from "./TopicCard";
 
@@ -19,12 +20,12 @@ class TopicList extends Component {
     switch_topic(topicId) {
         if (this.state.currentTopicId == topicId) {
             this.setState({currentTopicId: null});
-            if (typeof(this.props['onTopic']) !== 'undefined') {
+            if (typeof(this.props.onTopic) !== 'undefined') {
                 this.props.onTopic(null)
             }
         } else {
             this.setState({currentTopicId: topicId});
-            if (typeof(this.props['onTopic']) !== 'undefined') {
+            if (typeof(this.props.onTopic) !== 'undefined') {
                 this.props.onTopic(topicId)
             }
         }
@@ -43,6 +44,7 @@ class TopicList extends Component {
                     highlight={topicId == this.state.currentTopicId}
                     topicId={topicId}
                     frameId={this.props.frameId}
+                    binIdx={this.props.binIdx}
                     size={[200,50]}/>)
         }
         return <div 
@@ -51,5 +53,12 @@ class TopicList extends Component {
             {topicList}
         </div>
     }
+}
+TopicCard.propTypes = {
+  frameID: PropTypes.number,
+  topicIds: PropTypes.arrayOf(PropTypes.number),
+  binIdx: PropTypes.number,
+  className: PropTypes.string,
+  onTopic: PropTypes.func
 }
 export default TopicList

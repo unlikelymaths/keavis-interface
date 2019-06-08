@@ -216,6 +216,7 @@ class PopularTopicsPage extends React.Component {
                 <TopicList className='flex-item'
                     topicIds = {topicIds}
                     frameId = {this.state.frame_id}
+                    binIdx={this.state.binIdx}
                     onTopic = {this.switch_topic.bind(this)}/>
             </FrameContent>
         } else {
@@ -238,9 +239,10 @@ class PopularTopicsPage extends React.Component {
                         onBinIdx={this.handleBinIdx.bind(this)}/>
                 </div>
                 <TopicList className='right-sheet'
-                    topicIds = {topicIds}
-                    frameId = {this.state.frame_id}
-                    onTopic = {this.switch_topic.bind(this)}/>
+                    topicIds={topicIds}
+                    frameId={this.state.frame_id}
+                    binIdx={this.state.binIdx}
+                    onTopic={this.switch_topic.bind(this)}/>
             </FrameContent>
         }
     }
